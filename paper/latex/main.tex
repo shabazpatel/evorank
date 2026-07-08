@@ -13,7 +13,7 @@
 %% TODO: replace with the exact workshop line provided by the organizers.
 \conference{Workshop information to be inserted upon acceptance}
 
-\title{When Does LLM-Guided Discovery Actually Discover? An Audited Two-Campaign Study on E-Commerce Learning-to-Rank}
+\title{EvoRank: An Autonomous Ranking Engineer for Multi-Objective E-Commerce Search}
 
 \author[1]{Shabaz Patel}[%
 email=rayhan.b.patel@gmail.com,
@@ -26,30 +26,29 @@ email=rayhan.b.patel@gmail.com,
 %% TODO: add Rayhan's email and any ORCID iDs; adjust corresponding author if needed.
 
 \begin{abstract}
-LLM-guided evolutionary loops are increasingly used to discover machine
-learning components, and their results are typically reported on the fold the
-loop itself selected on. We present an open, fully audited case study on
-multi-objective e-commerce Learning-to-Rank that asks when such loops
-discover anything real. In a first campaign we evolve LambdaMART-style
-training objectives over relevance, conversion, and revenue signals on the
-Expedia ICDM 2013 dataset. The loop appears to work, beating baselines on its
-selection fold, yet a transfer audit on 60k held-out queries shows the gains
-are almost entirely fitness noise: per-edit effect sizes (0.002 to 0.005
-NDCG@10) are smaller than the selection-fold noise floor, and neither seeded
-domain knowledge nor gradient-introspective diagnostic feedback changes what
-transfers, although seeded knowledge accelerates selection-fold convergence
-about five-fold. In a second campaign we point the same loop at a search
-space with measured headroom above the noise floor: feature construction,
-model selection, loss selection, and ensemble architecture. There, three
-independent seeds converge within 50 iterations (about ten dollars each) on
-interpretable pipelines that Pareto-dominate an Optuna-tuned LambdaMART on
-all three objectives on held-out data, an advantage that persists under
-config-equalized comparison when training on the full 6.9M-impression
-dataset. Our central finding is diagnostic rather than architectural:
-search-space headroom relative to fitness noise, not guidance sophistication,
-separates apparent discovery from real discovery. We release the loop, the
-audit stack, and a measured catalog of failure modes, including three
-generations of target-encoding leakage, each caught by the audit.
+We present EvoRank, an open autonomous ranking engineer: an LLM-guided
+evolutionary loop that discovers complete Learning-to-Rank pipelines, feature
+construction, model selection, loss selection, and ensemble architecture, for
+multi-objective e-commerce search. On the Expedia ICDM 2013 dataset, with
+relevance, conversion, and revenue as competing objectives, three independent
+EvoRank seeds each converge within 50 iterations (about ten dollars of LLM
+spend) on interpretable pipelines that Pareto-dominate an Optuna-tuned
+LambdaMART on all three objectives on 60k held-out queries, an advantage that
+persists under config-equalized comparison when training on the full
+6.9M-impression dataset. The discovered pipelines independently reconstruct
+and extend the load-bearing structure of the original challenge winners'
+hand-built solutions. What makes these claims trustworthy is the built-in
+honesty harness, and it earns its place through a measured counterexample: an
+earlier campaign of the same loop, evolving only training objectives,
+appeared to work on its selection fold while a transfer audit showed the
+gains were almost entirely fitness noise (per-edit effect sizes below the
+noise floor), and neither seeded domain knowledge nor gradient-introspective
+diagnostic feedback changed what transferred. The deciding quantity is
+measurable in advance: search-space headroom relative to fitness noise. We
+package this as a headroom gate that predicts, before any LLM spend, whether
+the loop will pay off, and we release the tool, the audit stack, and a
+measured catalog of failure modes, including three generations of
+target-encoding leakage, each caught by the audit.
 \end{abstract}
 
 \begin{keywords}

@@ -18,7 +18,12 @@
 \author[1]{Shabaz Patel}[%
 email=rayhan.b.patel@gmail.com,
 ]
+\cormark[1]
+\author[1]{Rayhan Patel}[%
+]
 \address[1]{Independent Researcher}
+\cortext[1]{Corresponding author.}
+%% TODO: add Rayhan's email and any ORCID iDs; adjust corresponding author if needed.
 
 \begin{abstract}
 LLM-guided evolutionary loops are increasingly used to discover machine
@@ -102,22 +107,63 @@ None of the above audits discovery against held-out transfer under
 loop-realistic noise.
 
 \section{System and Audit Methodology}
-EvoRank wraps an evolutionary program database (a Pareto archive over ndcg,
-booking ndcg, and a pooled dollar-weighted revenue metric; island model; one
-LLM mutation call per iteration) around guardrailed evaluators. Data is the
-public Expedia Personalized Hotel Search training file (9.9M impressions,
-399k queries), split 70/15/15 by query, with graded labels (5 booked, 1
-clicked, 0 otherwise). A fast fitness fold (8k training queries) keeps
-candidate evaluation between 5 and 40 seconds.
 
+\subsection{Background: the evolutionary engine}
+%% TODO: add citation for the SkyDiscover framework once its reference is public.
+EvoRank builds on SkyDiscover, an open framework for LLM-guided evolutionary
+program search in the AlphaEvolve family. The unit of evolution is a source
+file in which mutable regions are delimited by EVOLVE-BLOCK markers;
+everything outside the markers is frozen, which is how we constrain what the
+search may change. Each iteration performs one cycle: sample a parent program
+(plus a small set of context programs) from a program database, assemble a
+prompt containing their source, scores, and evaluator feedback, make a single
+LLM call that proposes an edit to the mutable regions, evaluate the resulting
+candidate with a user-supplied \texttt{evaluate(program\_path)} function that
+returns a metric dictionary, and insert the scored candidate back into the
+database. For readers who know classical evolutionary computation: the LLM
+replaces hand-designed mutation and crossover operators, and the prompt
+context plays the role of the mating pool.
+
+We use SkyDiscover's AdaEvolve search controller. Its program database is an
+island model (two islands here) with periodic ring migration of top programs,
+which maintains diversity by evolving semi-isolated subpopulations. Island
+selection uses a UCB bandit over decayed improvement rewards, and each island
+adapts its exploration intensity from an accumulated improvement signal, so
+productive lineages are exploited while stagnating ones explore. In
+multi-objective mode the database keeps a Pareto archive: a candidate
+survives if no other program dominates it on all objectives (here ndcg,
+booking ndcg, and a pooled dollar-weighted revenue metric), with a scalar
+fitness key used only for tie-breaking and adaptive-state bookkeeping. On
+stagnation the controller can trigger a paradigm step that prompts the LLM
+for a high-level strategy change rather than a local edit. All state is
+checkpointed every five iterations, so runs resume exactly and every selected
+program is preserved with its lineage.
+
+\subsection{Task, data, and evaluators}
+Data is the public Expedia Personalized Hotel Search training file (9.9M
+impressions, 399k queries), split 70/15/15 by query, with graded labels (5
+booked, 1 clicked, 0 otherwise). A fast fitness fold (8k training queries)
+keeps candidate evaluation between 5 and 40 seconds; each candidate trains a
+gradient-boosted ranker under a fixed budget and is scored on the fold's
+validation queries. Degenerate candidates (non-finite gradients or metrics,
+timeouts, malformed specifications) receive zero fitness with an explanatory
+message that flows back into the next prompt, so guardrails double as
+teaching signals.
+
+\subsection{The audit stack}
 The audit stack, applied identically to every campaign, is the methodological
 core: (a) paired query bootstrap for every comparison, with noise-gated
 deltas inside the loop's own feedback; (b) equal-budget random-search
-controls; (c) symmetric hyperparameter treatment (post-hoc tuning of
+controls; (c) symmetric hyperparameter treatment (post-hoc Optuna tuning of
 discovered artifacts at the baseline's budget); (d) a selection-
 generalization audit that rescores every checkpoint's selected program on 60k
 held-out queries; (e) three-objective hypervolume; and (f) mechanism
-ablations of discovered artifacts.
+ablations of discovered artifacts. Baselines are LambdaMART (the standard
+gradient-boosted ranking algorithm, XGBoost rank:ndcg) with 40 trials of
+Optuna hyperparameter search, re-tuned separately in every data regime we
+report, plus an equal-budget random search over the same candidate space as
+the loop.
+%% TODO: consider a small figure here summarizing the audit stack.
 
 \section{Campaign 1: Objective Space, a Measured Negative}
 The evolvable artifact is a group-aware LambdaMART gradient with access to

@@ -147,8 +147,7 @@
 
   % }}}
 
-  \RequirePackage[useBOM,pdf17,a-1a]{pdfx}
-  \bool_gset_true:N \g_ceur_pdfx_bool
+  \RequirePackage[unicode]{hyperref} % local authoring: pdfx skipped (tectonic)
 }{%
   \RequirePackage[unicode]{hyperref}
 }
@@ -192,17 +191,7 @@
 \bool_new:N \g_ceur_nologo_bool
 \bool_gset_false:N \g_ceur_nologo_bool
 
-\file_if_exist:nTF { fontawesome5.sty } {%
-  \RequirePackage{fontawesome5}
-  % We need orcid icon
-  \@ifpackagelater{fontawesome5}{2020/01/17}{%
-    \bool_gset_false:N \g_ceur_nologo_bool
-  }{%
-    \bool_gset_true:N \g_ceur_nologo_bool
-  }
-}{%
-  \bool_gset_true:N \g_ceur_nologo_bool
-}
+\bool_gset_true:N \g_ceur_nologo_bool % local authoring: icons off (tectonic)
 
 %%
 %% PDF/A

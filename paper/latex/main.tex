@@ -14,9 +14,13 @@
 \conference{Workshop information to be inserted upon acceptance}
 
 \title{EvoRank: LLM-Guided Evolution of Multi-Objective Learning-to-Rank Pipelines}
+\tnotemark[1]
+\tnotetext[1]{Code, configurations, seeds, discovered programs, and all
+machine-generated results are available at
+\url{https://github.com/shabazpatel/evorank}.}
 
 \author[1]{Shabaz Patel}[%
-email=rayhan.b.patel@gmail.com,
+email=shabaz.b.patel@gmail.com,
 ]
 \cormark[1]
 \author[1]{Rayhan Patel}[%
@@ -170,6 +174,54 @@ stagnation the controller can trigger a paradigm step that prompts the LLM
 for a high-level strategy change rather than a local edit. All state is
 checkpointed every five iterations, so runs resume exactly and every selected
 program is preserved with its lineage.
+
+\subsection{Preliminaries: the algorithms in brief}
+For readers new to Learning-to-Rank, the recurring machinery is as follows.
+
+\emph{Ranking and NDCG@k.} A search query returns a list of items, each with
+a relevance label. NDCG@k scores how well a model orders each list: relevant
+items placed near the top earn gain discounted by log-position, normalized by
+the best achievable ordering, so 1.0 is a perfect ranking. We compute it per
+query and average (for revenue we instead pool dollars across queries, so
+high-value queries weigh more).
+
+\emph{GBDT and LambdaMART.} Gradient-boosted decision trees (XGBoost,
+LightGBM) fit an additive sequence of small trees, each correcting the
+previous ones via gradients of a loss. LambdaMART is the ranking instance:
+for every within-query pair where item $i$ outranks item $j$ in the labels,
+it applies a pairwise logistic gradient scaled by how much swapping the two
+would change NDCG, so training pressure concentrates where the metric is
+actually at stake. XGBoost's rank:ndcg and LightGBM's lambdarank implement
+it; our campaign-1 candidates are hand-written variants of exactly this
+gradient function.
+
+\emph{Hyperparameter tuning with Optuna.} A GBDT's quality depends on
+learning rate, tree depth, subsampling, and regularization. Optuna searches
+that space with a Bayesian strategy (TPE), proposing configurations, scoring
+each on validation data, and concentrating trials where scores improve. Our
+baselines get 40 trials, re-run in every data regime we report, because
+optimal depth and round counts change with training-set size.
+
+\emph{Ensembling by per-query z-scores.} Different model families make
+partially independent errors. Scores from different models live on different
+scales, so within each query we standardize every model's scores to zero mean
+and unit variance, then take a weighted sum. This was the combiner of choice
+among the original challenge winners and is what our discovered pipelines
+select.
+
+\emph{Out-of-fold target encoding.} Encoding a categorical column by the
+average label of its value (for example, a hotel's historical booking rate)
+is powerful but leaks labels into features if computed naively. The safe
+construction splits the training data into folds by query and encodes each
+row using statistics from the other folds only. Section 6 quantifies what
+goes wrong otherwise.
+
+\emph{The statistics.} A paired query bootstrap resamples queries with
+replacement and recomputes a metric difference between two systems thousands
+of times, yielding confidence intervals that respect the query as the unit of
+noise. Pareto dominance says pipeline A beats B only if A is at least as good
+on every objective and better on one; hypervolume measures how much objective
+space a set of non-dominated solutions covers.
 
 \subsection{Task, data, and evaluators}
 Data is the public Expedia Personalized Hotel Search training file (9.9M

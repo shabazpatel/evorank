@@ -1,79 +1,74 @@
 # EvoRank
 
-REA-style autonomous discovery for Learning-to-Rank pipelines, with a
-built-in honesty harness. An LLM-guided evolutionary loop searches feature
-construction, model selection, loss selection, and ensemble architecture for
-GBDT-family rankers, and every discovery is audited for transfer to held-out
-data before it counts.
-
-Built on the SkyDiscover engine (this repository's parent directory). The
-research story, including a fully measured negative campaign in objective
-space and a positive, transfer-audited campaign in pipeline space, is in
-paper/draft.md and runs/summary/.
-
-## The workflow (evorank_cli.py)
+**An autonomous ranking engineer for Learning-to-Rank.** EvoRank proposes
+hypotheses, builds candidate ranking pipelines, runs guarded experiments,
+learns from stage-attributed feedback, and keeps only what proves itself on
+held-out data. You define the objectives. It does the experimentation.
 
 ```
-uv run python evorank_cli.py gate      # headroom check BEFORE any LLM spend
+uv run python evorank_cli.py gate      # will this search space pay off? know BEFORE spending
 uv run python evorank_cli.py search --seeds 0,1,2 --iterations 50
-uv run python evorank_cli.py audit     # transfer audit on the held-out fold
-uv run python evorank_cli.py report    # one comparison table for everything
+uv run python evorank_cli.py audit     # only transfer-proven discoveries count
+uv run python evorank_cli.py report
 ```
 
-- gate: evaluates the seed pipeline and a hand-built reference candidate,
-  reports the fitness noise floor, and refuses to bless a search space whose
-  known-good candidate cannot beat it. This is the step the discovery-loop
-  literature skips; it predicts whether the loop will select real
-  improvements or noise on your data.
-- search: one LLM call per iteration mutates two blocks, feature-construction
-  code and a whitelisted declarative pipeline spec (xgb, lgbm, sklearn
-  families; rank, pointwise, binary, and custom losses; z-score or rank-mean
-  ensembles). Candidates get stage-attributed feedback: per-member scores,
-  the ensemble's margin over its best member, noise-gated metric deltas
-  against the seed, and segment decompositions. Resume-aware from checkpoints.
-- audit: rescores selected pipelines on a large held-out fold, so
-  selection-fold luck cannot masquerade as discovery.
-- report: aggregates all runs and baselines.
+## What it did on its first real assignment
 
-## Data contract
+Pointed at a public e-commerce hotel-search dataset (9.9M impressions, three
+competing objectives: relevance, conversion, revenue), three independent
+EvoRank seeds each converged in 50 iterations, roughly two hours and ten
+dollars of LLM spend, on ranking pipelines that beat an Optuna-tuned
+LambdaMART baseline on 60k held-out queries, on every objective at once.
+The advantage holds at full data scale under config-equalized comparison:
 
-Bring your own preparation (adapters are optional by design): three parquet
-folds, train/val/test, each with a qid column, numeric feature columns, and
-label columns, sorted so each qid is contiguous. This project's reference
-preparation for the Expedia ICDM 2013 dataset is data/prepare_expedia.py;
-the evaluator's guardrails (leakage-safe out-of-fold encodings with a
-sparsity floor, parameter clamps, wall budgets, degenerate-candidate
-rejection) apply regardless of dataset.
+| trained on 280k queries, tested on 60k | NDCG@10 | NDCG@38 |
+|---|---|---|
+| LambdaMART, Optuna-tuned at full scale | 0.4544 | 0.5132 |
+| EvoRank pipeline, same tuned config | **0.4619** | **0.5185** |
 
-## Headline result (details in runs/summary/PIPELINE_CAMPAIGN.md)
+The discovered pipelines are code you can read: within-query rank features,
+count encodings, lean feature sets, and a diverse three-member ensemble under
+per-query z-score weighting. All three seeds found the same core design
+independently, and their own code comments cite the experimental evidence
+they learned it from. The programs are in `discovered/`.
 
-Three independent seeds converged in 50 iterations (about ten dollars each)
-on interpretable pipelines that beat an Optuna-tuned LambdaMART baseline on
-60k held-out queries on all three objectives (relevance, conversion,
-revenue), an advantage that persists when retrained on the full 6.9M-row
-dataset. The same loop pointed at objective space alone discovers nothing
-that transfers; the difference, measured, is search-space headroom relative
-to fitness noise. Run the gate first.
+## Why it is different: the honesty harness
 
-## Repository map
+Autonomous experimentation systems have a failure mode nobody talks about:
+under noisy evaluation they select lucky candidates and report steady
+progress while discovering nothing real. We measured this happening, on this
+codebase, before we fixed it. EvoRank ships with the fix built in:
 
-```
-evorank_cli.py            the tool: gate / search / audit / report
-eval/evaluator_pipeline.py  guardrailed pipeline evaluator + feedback
-seed/initial_pipeline.py    seed program (two EVOLVE blocks)
-configs/                    campaign configs (system message = search contract)
-knowledge/                  optional domain priors injected into the prompt
-analyze/                    audit stack: bootstrap significance, transfer
-                            audits, hypervolume, mechanism ablation, aggregate
-data/                       reference dataset preparation + gate
-paper/                      design docs, figures, draft
-runs/summary/               machine-generated results, never hand-edited
-```
+- **The gate.** Before a single LLM call, `evorank gate` measures your
+  fitness noise floor and demands that a hand-built reference candidate beat
+  it decisively. If your search space has no headroom, EvoRank tells you to
+  keep your money.
+- **The audit.** `evorank audit` rescores every selected pipeline on a large
+  held-out fold. Selection-fold luck does not survive it. Our own first
+  campaign did not survive it either, and that story ships in the paper
+  rather than in a drawer.
+- **Guarded experiments.** Leakage-safe out-of-fold target encodings (we
+  cataloged and measured three generations of encoding leakage so you do not
+  have to), whitelisted model and loss families, parameter clamps, wall
+  budgets, and rejection messages written so the model learns from them.
 
-Part 1 artifacts (objective-space campaign: seed/initial_program.py,
-eval/evaluator.py with gradient-diagnostic feedback) are retained; they
-produced the measured negative result and the diagnostics that motivated the
-pipeline campaign.
+## How the loop works
+
+One LLM call per iteration mutates two blocks of a candidate program:
+
+1. **Feature construction**, real code over semantically named columns, with
+   a train-fold statistics API for counts, out-of-fold rates, quantiles, and
+   stacked scores.
+2. **Pipeline spec**, a declarative choice of one to three members (XGBoost,
+   LightGBM, sklearn families; ranking, pointwise, binary, or custom losses)
+   and an ensemble combiner.
+
+Every candidate gets stage-attributed feedback: which features changed, how
+each member scored, what the ensemble added over its best member, and
+noise-gated metric deltas so the model can tell signal from luck. Survivors
+enter a Pareto archive across your objectives. Rinse, repeat, audit.
+
+![system flowchart](paper/figures/evorank_flowchart.png)
 
 ## Install
 
@@ -82,26 +77,41 @@ EvoRank runs inside a SkyDiscover checkout (the evolutionary engine):
 ```
 git clone <skydiscover repo> && cd skydiscover
 uv sync
-uv pip install -r evorank/requirements.txt   # rerun after any `uv sync`, it prunes extras
+uv pip install -r evorank/requirements.txt   # rerun after any `uv sync`
 cd evorank
 uv run python evorank_cli.py gate
 ```
 
-Set an LLM key in the repo root .env (ANTHROPIC_API_KEY, OPENAI_API_KEY, or
-any endpoint SkyDiscover's OpenAI-compatible client reaches) before `search`.
+Set an LLM key in the repo root `.env` (any OpenAI-compatible endpoint) before
+`search`.
 
-## Discovered artifacts
+## Bring your own data
 
-discovered/ contains the committed best programs from both campaigns: the
-three converged pipelines (pipeline_s*_best.py), the best evolved objective
-from the negative campaign, and its ablation-simplified variant. Each is a
-runnable candidate under the corresponding evaluator.
+Three parquet folds (train/val/test) with a `qid` column, numeric features,
+and label columns, rows contiguous per query. That is the whole contract.
+The reference preparation for the Expedia ICDM 2013 dataset is in
+`data/prepare_expedia.py`; heavier adapters are deliberately optional.
 
-## Notes
+## The research behind it
 
-- LLM: any OpenAI-compatible endpoint SkyDiscover supports; campaigns here
-  used claude-sonnet-5 (note: rejects the temperature parameter, configs set
-  temperature: null).
-- Every number in the paper traces to a CSV under runs/summary/ produced by
-  a script under analyze/. No manual transcription.
-- Prose in this repository uses commas and periods, no em dashes.
+This repository is the full artifact of a two-campaign study: one campaign
+where the loop looked successful and provably was not (mechanism measured:
+per-edit effect sizes below the fitness noise floor), and one where it
+produced the transfer-audited results above. Every number in the paper traces
+to a CSV in `runs/summary/` generated by a script in `analyze/`. Draft and
+design docs are in `paper/`.
+
+```
+evorank_cli.py        gate / search / audit / report
+eval/                 guardrailed evaluators + stage-attributed feedback
+seed/                 seed programs (the starting points for evolution)
+discovered/           what the loop found, as runnable code
+analyze/              the audit stack: bootstrap, transfer, hypervolume, ablation
+runs/summary/         machine-generated results, never hand-edited
+paper/                design docs, figures, draft
+```
+
+## License
+
+Apache-2.0. If this tool or its methodology is useful in your work, please
+cite the paper (citation entry coming with publication).

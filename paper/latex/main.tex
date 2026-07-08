@@ -1,0 +1,280 @@
+%% EvoRank short paper, CEURART one-column format.
+%% Compile with pdflatex or on Overleaf with ceurart.cls alongside.
+\documentclass[]{ceurart}
+\sloppy
+\usepackage{booktabs}
+
+\begin{document}
+
+\copyrightyear{2026}
+\copyrightclause{Copyright for this paper by its authors.
+  Use permitted under Creative Commons License Attribution 4.0 International (CC BY 4.0).}
+
+%% TODO: replace with the exact workshop line provided by the organizers.
+\conference{Workshop information to be inserted upon acceptance}
+
+\title{When Does LLM-Guided Discovery Actually Discover? An Audited Two-Campaign Study on E-Commerce Learning-to-Rank}
+
+\author[1]{Shabaz Patel}[%
+email=rayhan.b.patel@gmail.com,
+]
+\address[1]{Independent Researcher}
+
+\begin{abstract}
+LLM-guided evolutionary loops are increasingly used to discover machine
+learning components, and their results are typically reported on the fold the
+loop itself selected on. We present an open, fully audited case study on
+multi-objective e-commerce Learning-to-Rank that asks when such loops
+discover anything real. In a first campaign we evolve LambdaMART-style
+training objectives over relevance, conversion, and revenue signals on the
+Expedia ICDM 2013 dataset. The loop appears to work, beating baselines on its
+selection fold, yet a transfer audit on 60k held-out queries shows the gains
+are almost entirely fitness noise: per-edit effect sizes (0.002 to 0.005
+NDCG@10) are smaller than the selection-fold noise floor, and neither seeded
+domain knowledge nor gradient-introspective diagnostic feedback changes what
+transfers, although seeded knowledge accelerates selection-fold convergence
+about five-fold. In a second campaign we point the same loop at a search
+space with measured headroom above the noise floor: feature construction,
+model selection, loss selection, and ensemble architecture. There, three
+independent seeds converge within 50 iterations (about ten dollars each) on
+interpretable pipelines that Pareto-dominate an Optuna-tuned LambdaMART on
+all three objectives on held-out data, an advantage that persists under
+config-equalized comparison when training on the full 6.9M-impression
+dataset. Our central finding is diagnostic rather than architectural:
+search-space headroom relative to fitness noise, not guidance sophistication,
+separates apparent discovery from real discovery. We release the loop, the
+audit stack, and a measured catalog of failure modes, including three
+generations of target-encoding leakage, each caught by the audit.
+\end{abstract}
+
+\begin{keywords}
+  learning to rank \sep
+  LLM agents \sep
+  automated machine learning \sep
+  evolutionary program search \sep
+  e-commerce search \sep
+  reproducibility
+\end{keywords}
+
+\maketitle
+
+\section{Introduction}
+Automated discovery loops that pair a large language model with evolutionary
+search over programs have produced striking results, and industrial systems
+such as Meta's Ranking Engineer Agent apply the pattern to ranking at scale.
+These systems are closed, and published results in the genre share a
+methodological gap: gains are overwhelmingly reported on the data the loop
+used to select candidates. For ranking, where realistic per-candidate
+evaluations are noisy by necessity, this gap matters. Selection under noise
+systematically promotes lucky candidates, and a loop can appear to make
+steady progress while discovering nothing that transfers.
+
+We contribute an open, end-to-end audited account of when the pattern works
+and when it silently does not, on a public e-commerce ranking task with three
+competing objectives (relevance, conversion, revenue). Our contributions are:
+(1) a measured failure: evolved training objectives whose selection-fold
+gains do not survive a held-out transfer audit, with the mechanism quantified
+(effect sizes below the fitness noise floor); (2) guidance ablations showing
+that seeded domain knowledge and evidence-rich diagnostic feedback change the
+speed and style of search but not what generalizes; (3) a measured success
+under identical auditing: pointing the same loop at a search space whose
+effect sizes clear the noise floor yields transfer-audited, Pareto-dominant
+pipelines in all three seeds, which independently reconstruct the
+load-bearing structure of the ICDM 2013 challenge winners' hand-built
+solutions; and (4) the released tool and audit stack, including a headroom
+gate that predicts, before any LLM spend, whether a search space will reward
+the loop.
+
+\section{Related Work}
+LLM-guided program evolution includes AlphaEvolve-style systems and open
+engines, with industrial ranking agents (REA, GEARS) closed and DNN-centric.
+Automated loss discovery (GLO, AM-LFS, AutoLoss-Zero, CSE-Autoloss) and
+hand-derived metric-driven losses (LambdaLoss) motivate our first campaign.
+Reflective feedback for LLM-driven optimization (Reflexion, ProTeGi, OPRO,
+GEPA) feeds back execution traces and scores; to our knowledge gradient-level
+introspection has not previously been used as feedback for loss search. LLM
+feature engineering (CAAFE and successors) and the classical target-encoding
+leakage literature inform our second campaign. The ICDM 2013 challenge
+solutions document the recipes our loop rediscovers. A 2024 survey of
+e-commerce LTR notes that datasets with monetary outcome labels remain
+scarce, which anchors open multi-objective work to the Expedia benchmark.
+None of the above audits discovery against held-out transfer under
+loop-realistic noise.
+
+\section{System and Audit Methodology}
+EvoRank wraps an evolutionary program database (a Pareto archive over ndcg,
+booking ndcg, and a pooled dollar-weighted revenue metric; island model; one
+LLM mutation call per iteration) around guardrailed evaluators. Data is the
+public Expedia Personalized Hotel Search training file (9.9M impressions,
+399k queries), split 70/15/15 by query, with graded labels (5 booked, 1
+clicked, 0 otherwise). A fast fitness fold (8k training queries) keeps
+candidate evaluation between 5 and 40 seconds.
+
+The audit stack, applied identically to every campaign, is the methodological
+core: (a) paired query bootstrap for every comparison, with noise-gated
+deltas inside the loop's own feedback; (b) equal-budget random-search
+controls; (c) symmetric hyperparameter treatment (post-hoc tuning of
+discovered artifacts at the baseline's budget); (d) a selection-
+generalization audit that rescores every checkpoint's selected program on 60k
+held-out queries; (e) three-objective hypervolume; and (f) mechanism
+ablations of discovered artifacts.
+
+\section{Campaign 1: Objective Space, a Measured Negative}
+The evolvable artifact is a group-aware LambdaMART gradient with access to
+raw behavioral signals (relevance grade, booking flag, booking revenue) per
+impression; training configuration, features, and metrics are frozen, and the
+seed reproduces XGBoost's built-in rank:ndcg within noise.
+
+On the fold the loop selects on, evolved objectives beat the default baseline
+and improve steadily. The transfer audit reverses the picture: final selected
+objectives gain $+0.0004$ to $+0.0014$ NDCG@10 on held-out queries, the best
+evolved objective beats its own seed by $+0.0002$ ($p=0.76$), an equal-budget
+random search transfers as well or better ($p=0.03$ in its favor), and every
+method is significantly below the tuned baseline ($p=0.0002$). The mechanism
+is measured: per-edit effect sizes of 0.002 to 0.005 against a selection-fold
+noise floor of $\pm 0.008$ to $0.015$ (1.6k queries). Enlarging the fitness
+fold to 6k queries, nearly free since evaluation cost is training-dominated,
+halves the noise and triples the mean transferred gain, and is the only
+intervention that moved transfer.
+
+Guidance ablations: seeding the prompt with curated domain knowledge reaches
+the random-search-budget level on the selection fold in 1 to 3 iterations
+versus 7 to 23 without it, and wins three-objective hypervolume in every seed
+(mean 252 vs 230, $\times 10^{-6}$), with unchanged transfer. A diagnostic
+feedback channel (noise-gated deltas, segment decomposition, a one-step
+gradient alignment probe, per-signal gradient-usage probes) is flat across
+three seeds on every endpoint. One probe byproduct is worth reporting: the
+best discovered revenue term moves only 0.09 percent of gradient mass while
+removing it costs 0.009 revenue, so small but systematic gradient biases
+compound across boosting rounds.
+
+Mechanism ablation outperformed further search: knocking out components of
+the best discovered objective attributed its behavior and revealed that its
+per-query adaptive blending was harmful; a constant blend improved all three
+metrics at the cost of five evaluations. At full data scale the objective
+family is a plateau: all objectives, including default rank:ndcg, land within
+0.001 NDCG@10 of each other.
+
+\section{Campaign 2: Pipeline Space, a Measured Positive}
+The second campaign evolves two blocks: feature-construction code over
+semantically named columns with a leakage-guarded train-fold statistics API,
+and a declarative whitelisted pipeline specification (one to three members
+from XGBoost, LightGBM, and sklearn families with rank, pointwise, binary, or
+campaign-1 custom losses, combined by per-query z-score weighting or rank
+averaging). Feedback is stage-attributed so the loop can tell which axis
+earned each change: a features line, per-member validation scores, the
+ensemble's margin over its best member, noise-gated metric deltas, and
+segment decompositions.
+
+A headroom gate precedes any LLM spend: a hand-built candidate from the ICDM
+2013 literature must clear 2.5 times the noise floor, and within-query rank
+features plus count encodings did ($+0.013$ NDCG@10). The gate surfaced a
+three-generation leakage study we report as a practitioner catalog: naive
+train-fold target encoding costs $-0.10$ NDCG (the model memorizes its own
+labels); leave-one-out encoding is subtly worse at $-0.13$, because
+subtracting the row's own label plants a per-row offset perfectly correlated
+with that label, which histogram-based trees read as a label detector; and
+query-folded out-of-fold encoding is clean. Each generation was caught by the
+audit before any search depended on it.
+
+\begin{table}
+  \caption{Campaign 2 transfer audit: fast-train protocol, 59{,}902 held-out
+  queries. All three seeds beat the tuned baseline; the best seed dominates
+  on all three objectives.}
+  \label{tab:transfer}
+  \begin{tabular}{lcccc}
+    \toprule
+    Method & Val NDCG@10 & Test NDCG@10 & Test book & Test revenue \\
+    \midrule
+    Seed pipeline & 0.4218 & 0.4222 & 0.4443 & 0.4105 \\
+    LambdaMART + Optuna & 0.4330 & 0.4296 & 0.4527 & 0.4231 \\
+    Pipeline s0 & 0.4356 & 0.4316 & 0.4545 & 0.4257 \\
+    Pipeline s1 & 0.4359 & 0.4322 & 0.4553 & 0.4215 \\
+    Pipeline s2 & 0.4398 & \textbf{0.4352} & \textbf{0.4582} & \textbf{0.4239} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Three seeds, 50 iterations each, about 150 LLM calls and ten dollars per
+seed, independently converged on the same interpretable core: five
+within-query percentile ranks (price, star rating, review score, location
+scores), count encodings of property and destination identifiers, a lean 20
+to 30 column feature set whose program comments cite the measured bloat
+evidence, and a diverse three-member ensemble (XGBoost rank:ndcg, LightGBM
+lambdarank, plus an extra-trees or binary member) under per-query z-score
+weighting. Table~\ref{tab:transfer} shows the transfer audit: roughly 70
+percent of selection-fold gains survive on 60k held-out queries, and all
+three seeds beat the tuned baseline.
+
+\begin{table}
+  \caption{Full-scale comparison (trained on 280k queries, tested on 60k),
+  including NDCG@38, the ICDM 2013 challenge metric. The config-equalized
+  pipeline is a lower bound (member configuration not re-tuned for the
+  pipeline).}
+  \label{tab:fullscale}
+  \begin{tabular}{lcccc}
+    \toprule
+    Method & NDCG@10 & NDCG@38 & Book@10 & Revenue@10 \\
+    \midrule
+    Tuned baseline (fast-regime config) & 0.4349 & 0.4983 & 0.4588 & 0.4300 \\
+    Tuned baseline (full-scale config) & 0.4544 & 0.5132 & 0.4805 & 0.4565 \\
+    Pipeline s1 (fast-regime config) & 0.4490 & 0.5080 & 0.4738 & 0.4483 \\
+    Pipeline s1 (config-equalized) & \textbf{0.4619} & \textbf{0.5185} & \textbf{0.4883} & \textbf{0.4585} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The full-data regime required its own rigor step and yields a methodology
+lesson (Table~\ref{tab:fullscale}): against a baseline tuned in the fast
+regime the pipelines win easily, but re-tuning the baseline at full scale
+reverses that naive verdict, and only a config-equalized comparison isolates
+the discovered structure, which then wins on all four reported numbers.
+Relative to the ICDM 2013 challenge report (0.531 NDCG@38 on a hidden,
+unreproducible leaderboard, from a 12-model hand-built ensemble trained on
+the full data), our numbers are a comparable-protocol approximation on our
+own held-out split, in the same ballpark and not claimed as superior.
+
+\section{Discussion}
+The two campaigns differ in exactly one variable, the search space, and the
+same loop produced noise in one and transfer-audited Pareto dominance in the
+other. The deciding quantity is measurable in advance: the ratio of
+achievable effect sizes to fitness-fold noise. We suggest a headroom gate as
+cheap preregistration for discovery loops, and transfer-audited selection as
+the reporting standard. Guidance (prompt knowledge, evidence-rich feedback)
+is a speed and interpretability lever, but in our measurements evaluator-side
+investment (larger fitness folds, leakage-safe statistics, stage-attributed
+rejection messages the model learns from) carried more of the outcome.
+
+Limitations: one dataset, though newer public datasets lack conversion and
+revenue labels, which is precisely why open multi-objective LTR remains
+anchored to this benchmark; three seeds per condition; NDCG@38 comparisons to
+the 2013 challenge are approximate by necessity; revenue is a proxy metric;
+and discovered pipelines were audited for transfer, not online effects.
+
+\section{Conclusion}
+Publishing an audited failure next to an audited success on the same task is,
+we believe, more useful than either alone. The loop is neither magic nor
+broken: it is a search procedure whose discoveries are real precisely when
+the search space offers effect sizes the fitness signal can resolve. Code,
+configs, seeds, per-iteration logs, discovered programs, and audit scripts
+are released at \url{https://github.com/shabazpatel/evorank}.
+
+%% TODO: replace with a proper .bib once citations are finalized.
+\begin{thebibliography}{9}
+\bibitem{liu2013} X. Liu et al. Combination of Diverse Ranking Models for
+Personalized Expedia Hotel Searches. arXiv:1311.7679, 2013.
+\bibitem{wang2018} X. Wang et al. The LambdaLoss Framework for Ranking Metric
+Optimization. CIKM, 2018.
+\bibitem{survey2024} A Survey on E-Commerce Learning to Rank.
+arXiv:2412.03581, 2024.
+\bibitem{reflexion} N. Shinn et al. Reflexion: Language Agents with Verbal
+Reinforcement Learning. NeurIPS, 2023.
+\bibitem{protegi} R. Pryzant et al. Automatic Prompt Optimization with
+Gradient Descent and Beam Search. EMNLP, 2023.
+\bibitem{caafe} N. Hollmann et al. Large Language Models for Automated Data
+Science: Introducing CAAFE. NeurIPS, 2023.
+\bibitem{autolosszero} H. Li et al. AutoLoss-Zero: Searching Loss Functions
+from Scratch for Generic Tasks. CVPR, 2022.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,33 @@
+# Data: raw download and generated parquet splits are never committed.
+data/raw/
+data/prepared/
+data/prepared_fast/
+data/feature_map.csv
+
+# Run outputs, logs, and SkyDiscover checkpoints. The machine-generated
+# results the paper cites (runs/summary) ARE committed; raw checkpoints,
+# caches, and operational logs are not. Discovered best programs are
+# preserved in discovered/.
+runs/*
+!runs/.gitkeep
+!runs/summary/
+runs/summary/mechanism_ablation/
+runs/summary/*/
+
+# The wrong Kaggle competition (hotel-cluster classification); kept locally,
+# not part of the project. See CLAUDE.md Section 0.2.
+expedia-hotel-recommendations/
+
+# Notebook scratch files written to cwd by foundation.ipynb.
+notebooks/initial_program_seed.py
+notebooks/mutant_seed.py
+notebooks/broken_seed.py
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+# Local tooling and OS junk
+.claude/
+.DS_Store
+**/.DS_Store

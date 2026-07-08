@@ -1,0 +1,9 @@
+method,fold,ndcg,book_ndcg,revenue,train_seconds
+seed,val,0.440782,0.463648,0.434257,1120
+seed,test,0.439687,0.463956,0.436567,1120
+random_best,val,0.441069,0.464052,0.435348,1415
+random_best,test,0.439599,0.463984,0.437216,1415
+lambdamart_default,val,0.441347,0.464044,0.440220,31
+lambdamart_default,test,0.440623,0.464757,0.440470,31
+evolved_mem_on_s0,val,0.440996,0.464570,0.435385,48525
+evolved_mem_on_s0,test,0.440362,0.465302,0.442480,48525

@@ -1,0 +1,76 @@
+# Learning-to-Rank priors for objective discovery
+
+Curated domain knowledge for evolving a LambdaMART-style training objective on
+e-commerce hotel search. This file is the experimental treatment for the memory
+ablation. Version it, never edit it mid-experiment-set.
+
+## The lambda-gradient form
+
+LambdaMART sidesteps non-differentiable ranking metrics by defining gradients
+directly. For each within-query pair (i, j) where i is more relevant than j,
+the pairwise force is lambda_ij = -sigma * s(-sigma(si - sj)) * |delta M_ij|,
+where s is the sigmoid and |delta M_ij| is the absolute change in the target
+metric if i and j were swapped in the current ranking. Row gradients accumulate
+lambda over pairs (i gets lambda, j gets -lambda). The Hessian uses
+sigma^2 * rho * (1 - rho) * |delta M| and must stay positive for stable boosting.
+The |delta NDCG| weighting is why LambdaMART optimizes NDCG rather than raw
+pairwise accuracy. Swapping the metric inside |delta M| retargets the whole
+objective, which is the cleanest lever this search has.
+
+## LambdaLoss: tie the loss to the metric you report
+
+The LambdaLoss framework (Wang et al. 2018) shows lambda weights correspond to
+bounds on specific metrics. Practical consequence: if you are scored on three
+metrics, a principled move is a gain vector or pair weight that reflects all
+three, not only graded relevance. Ad hoc gradient hacks that do not correspond
+to any metric bound tend to help train loss but not eval metrics.
+
+## Signals available per row, and how they interact here
+
+- rel: graded 5 (booked), 1 (clicked), 0 (neither). Standard gain is 2^rel - 1,
+  so a booking outweighs a click 31 to 1 under NDCG.
+- booking: binary conversion flag. Every query in this data has at most one
+  booking, so conversion is about pushing that single item to the top.
+- rev: booking revenue in USD, zero unless booked. Highly skewed: median ~219,
+  p95 ~1223, max ~168k, Gini ~0.52. The revenue metric is pooled across queries
+  and dollar weighted, so high-value bookings dominate it. Raw dollars in a gain
+  explode gradients on outliers; log1p, sqrt, or clipping at a high percentile
+  keep magnitude information while bounding the tail. Where you clip or how you
+  transform is itself worth searching over.
+- The three eval metrics genuinely trade off: ndcg rewards clicks too,
+  book_ndcg treats all bookings equally per query, revenue weights queries by
+  dollars. An objective that only chases one axis usually pays on another.
+
+## Pair construction: topk vs mean
+
+Using all pairs (mean style) is stable but spends gradient on hopeless
+low-ranked pairs. Restricting to pairs involving the current top-k concentrates
+learning where the metric is measured (k=10 here) and often speeds early gains,
+at some risk of ignoring items that could climb. Position-aware truncation or
+downweighting of deep pairs is a common middle ground.
+
+## Score transforms and discounting
+
+Only rank order matters at eval, so any monotonic transform of scores is free.
+The log2(rank + 2) discount concentrates gradient at the top; steeper discounts
+(for example 1/rank) push top-1 conversion harder, which suits a
+single-booking-per-query regime. Normalizing per query by ideal DCG keeps
+queries comparable; unnormalized gains let big queries dominate.
+
+## Known failure modes to avoid
+
+- Degenerate constant or near-constant scores: gradients vanish, metrics sit at
+  the random baseline. Usually caused by over-aggressive weighting that zeroes
+  most pairs.
+- Exploding grad or hess from unbounded revenue weights or large sigma. Keep
+  hess floored above zero and magnitudes finite; the evaluator rejects
+  non-finite values outright.
+- Over-weighting head bookings: pushing only the few highest-revenue bookings
+  can collapse ndcg and book_ndcg. Blend rather than replace the relevance gain.
+- Position bias: labels come from logged impressions, so low positions are
+  under-clicked. The dataset has a randomized subset, but naive objectives
+  inherit the bias; gentle discount changes are safer than aggressive
+  debiasing guesses.
+- Training-metric mismatch: improving pairwise accuracy on all pairs does not
+  imply NDCG@10 gains. Check that a change maps onto one of the three reported
+  metrics.

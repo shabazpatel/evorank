@@ -5,6 +5,32 @@ hypotheses, builds candidate ranking pipelines, runs guarded experiments,
 learns from stage-attributed feedback, and keeps only what proves itself on
 held-out data. You define the objectives. It does the experimentation.
 
+```mermaid
+flowchart LR
+    subgraph S1["1 &nbsp;gate"]
+        G["measure the noise floor;<br/>a hand-built candidate<br/>must beat it decisively"]
+    end
+    subgraph S2["2 &nbsp;search &nbsp;(one LLM call per iteration)"]
+        direction LR
+        P["propose a<br/>mutation"] --> B["candidate pipeline<br/>features · models<br/>losses · ensemble"]
+        B --> E["guarded experiment<br/>leakage-safe stats,<br/>clamps, budgets"]
+        E --> F["stage-attributed feedback<br/>per-member scores ·<br/>ensemble margin ·<br/>noise-gated deltas"]
+        F --> A[("Pareto<br/>archive")]
+        A -.->|"parent + context<br/>programs"| P
+    end
+    subgraph S3["3 &nbsp;audit"]
+        T["rescore selections on<br/>60k held-out queries"]
+    end
+    S1 ==>|"headroom confirmed,<br/>worth the spend"| S2
+    S2 ==> S3
+    S3 ==>|"only transfer-proven<br/>discoveries count"| R["4 &nbsp;report"]
+
+    style S1 fill:#eef3fb,stroke:#4a6fa5
+    style S2 fill:#eefaf0,stroke:#3f8f5f
+    style S3 fill:#fdf3e7,stroke:#c07a2d
+    style R fill:#f6eef9,stroke:#7d5a96
+```
+
 ```
 uv run python evorank_cli.py gate      # will this search space pay off? know BEFORE spending
 uv run python evorank_cli.py search --seeds 0,1,2 --iterations 50

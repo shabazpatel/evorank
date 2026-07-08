@@ -6,29 +6,24 @@ learns from stage-attributed feedback, and keeps only what proves itself on
 held-out data. You define the objectives. It does the experimentation.
 
 ```mermaid
-flowchart LR
-    subgraph S1["1 &nbsp;gate"]
-        G["measure the noise floor;<br/>a hand-built candidate<br/>must beat it decisively"]
-    end
-    subgraph S2["2 &nbsp;search &nbsp;(one LLM call per iteration)"]
+flowchart TB
+    G["🚦 <b>gate</b><br/>is this search space worth the spend?"]
+    G ==> LOOP
+    subgraph LOOP["🔁 <b>search</b> — one LLM call per iteration"]
         direction LR
-        P["propose a<br/>mutation"] --> B["candidate pipeline<br/>features · models<br/>losses · ensemble"]
-        B --> E["guarded experiment<br/>leakage-safe stats,<br/>clamps, budgets"]
-        E --> F["stage-attributed feedback<br/>per-member scores ·<br/>ensemble margin ·<br/>noise-gated deltas"]
-        F --> A[("Pareto<br/>archive")]
-        A -.->|"parent + context<br/>programs"| P
+        P["propose"] --> C["candidate:<br/>features, models,<br/>losses, ensemble"]
+        C --> X["guarded<br/>experiment"]
+        X --> F["evidence<br/>feedback"]
+        F --> AR[("archive")]
+        AR -.-> P
     end
-    subgraph S3["3 &nbsp;audit"]
-        T["rescore selections on<br/>60k held-out queries"]
-    end
-    S1 ==>|"headroom confirmed,<br/>worth the spend"| S2
-    S2 ==> S3
-    S3 ==>|"only transfer-proven<br/>discoveries count"| R["4 &nbsp;report"]
+    LOOP ==> A["🔍 <b>audit</b><br/>does it transfer to held-out data?"]
+    A ==> R["📊 <b>report</b><br/>only proven discoveries count"]
 
-    style S1 fill:#eef3fb,stroke:#4a6fa5
-    style S2 fill:#eefaf0,stroke:#3f8f5f
-    style S3 fill:#fdf3e7,stroke:#c07a2d
-    style R fill:#f6eef9,stroke:#7d5a96
+    style G fill:#eef3fb,stroke:#4a6fa5,stroke-width:2px
+    style LOOP fill:#f2faf4,stroke:#3f8f5f,stroke-width:2px
+    style A fill:#fdf3e7,stroke:#c07a2d,stroke-width:2px
+    style R fill:#f6eef9,stroke:#7d5a96,stroke-width:2px
 ```
 
 ```

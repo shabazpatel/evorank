@@ -90,20 +90,53 @@ gate that predicts, before any LLM spend, whether a search space will reward
 the loop.
 
 \section{Related Work}
-LLM-guided program evolution includes AlphaEvolve-style systems and open
-engines, with industrial ranking agents (REA, GEARS) closed and DNN-centric.
-Automated loss discovery (GLO, AM-LFS, AutoLoss-Zero, CSE-Autoloss) and
-hand-derived metric-driven losses (LambdaLoss) motivate our first campaign.
-Reflective feedback for LLM-driven optimization (Reflexion, ProTeGi, OPRO,
-GEPA) feeds back execution traces and scores; to our knowledge gradient-level
-introspection has not previously been used as feedback for loss search. LLM
-feature engineering (CAAFE and successors) and the classical target-encoding
-leakage literature inform our second campaign. The ICDM 2013 challenge
-solutions document the recipes our loop rediscovers. A 2024 survey of
-e-commerce LTR notes that datasets with monetary outcome labels remain
-scarce, which anchors open multi-objective work to the Expedia benchmark.
-None of the above audits discovery against held-out transfer under
-loop-realistic noise.
+\textbf{LLM-guided program evolution.} FunSearch and AlphaEvolve pair an LLM
+mutation operator with evolutionary search over programs and automated
+evaluators, with open engines reproducing the pattern; industrial ranking
+agents (REA, GEARS) apply agentic experimentation to production ranking
+behind closed doors. Results in this genre are overwhelmingly reported on the
+fold the loop selected on. We contribute the missing measurement layer: an
+identical loop shown provably selecting noise in one search space and
+provably discovering in another, with the deciding quantity (headroom versus
+fitness noise) measurable before any spend, in the first open, reproducible
+instance of the pattern for tabular LTR.
+
+\textbf{Automated loss discovery.} GLO, AM-LFS, AutoLoss-Zero, and
+CSE-Autoloss search loss functions by genetic programming over primitives,
+mostly for vision; LambdaLoss is the hand-derived metric-bound counterpart;
+RankEvolve applies evolutionary search to unsupervised lexical retrieval with
+a scalar fitness. We bring loss search to supervised multi-objective GBDT
+ranking with LLM mutations over full gradient code, and report the outcome
+honestly: on this dataset the objective family's headroom sits below any
+loop-affordable noise floor, so discovered losses do not transfer, a negative
+result this literature has no analog of.
+
+\textbf{Reflective feedback for LLM optimization.} Reflexion, ProTeGi, OPRO,
+and GEPA show that richer textual feedback (traces, textual gradients)
+improves LLM-driven search. We test the assumption under controlled
+conditions and measure its boundary: gradient-introspective feedback, a new
+feedback type possible because the evolved artifact is a differentiable loss,
+changed nothing about what transferred across three seeds, while a data-side
+fix to the fitness signal tripled transfer. Feedback content proved a speed
+and interpretability lever, not a truth lever.
+
+\textbf{Agentic AutoML and LLM feature engineering.} CAAFE generates features
+for tabular classification; AIDE, ML-Agent, MLZero, and related agents
+iterate over ML pipelines, typically evaluated by single-objective validation
+accuracy. Our deltas are the ranking domain (query-grouped data, within-query
+rank features, per-query ensembling), transfer-audited selection as the
+acceptance criterion, and a measured catalog of agent-specific leakage modes
+in target encoding (naive, leave-one-out, and query-folded out-of-fold, each
+quantified).
+
+\textbf{LTR foundations and the benchmark.} LambdaMART remains the GBDT
+ranking standard; the ICDM 2013 challenge solutions document the feature
+recipes and per-query z-score ensembles that won; a 2024 survey notes that
+public datasets with monetary outcome labels remain scarce, anchoring open
+multi-objective work to this benchmark. Our loop autonomously rediscovers the
+load-bearing structure of those hand-built solutions and extends it, in about
+two hours for about ten dollars, and beats a per-regime-tuned LambdaMART on
+all objectives at every scale tested.
 
 \section{System and Audit Methodology}
 

@@ -97,29 +97,31 @@ gate that predicts, before any LLM spend, whether a search space will reward
 the loop.
 
 \section{Related Work}
-\textbf{LLM-guided program evolution.} FunSearch and AlphaEvolve pair an LLM
+\textbf{LLM-guided program evolution.} FunSearch~\cite{funsearch} and
+AlphaEvolve~\cite{alphaevolve} pair an LLM
 mutation operator with evolutionary search over programs and automated
-evaluators, with open engines reproducing the pattern; industrial ranking
-agents (REA, GEARS) apply agentic experimentation to production ranking
-behind closed doors. Results in this genre are overwhelmingly reported on the
+evaluators, with open engines~\cite{adaevolve,evox} reproducing the pattern;
+industrial ranking agents (REA, GEARS)~\cite{rea} apply agentic
+experimentation to production ranking behind closed doors. Results in this genre are overwhelmingly reported on the
 fold the loop selected on. We contribute the missing measurement layer: an
 identical loop shown provably selecting noise in one search space and
 provably discovering in another, with the deciding quantity (headroom versus
 fitness noise) measurable before any spend, in the first open, reproducible
 instance of the pattern for tabular LTR.
 
-\textbf{Automated loss discovery.} GLO, AM-LFS, AutoLoss-Zero, and
-CSE-Autoloss search loss functions by genetic programming over primitives,
-mostly for vision; LambdaLoss is the hand-derived metric-bound counterpart;
-RankEvolve applies evolutionary search to unsupervised lexical retrieval with
+\textbf{Automated loss discovery.} GLO~\cite{glo}, AM-LFS~\cite{amlfs},
+AutoLoss-Zero~\cite{autolosszero}, and CSE-Autoloss~\cite{cseautoloss}
+search loss functions by genetic programming over primitives,
+mostly for vision; LambdaLoss~\cite{lambdaloss} is the hand-derived metric-bound counterpart;
+RankEvolve~\cite{rankevolve} applies evolutionary search to unsupervised lexical retrieval with
 a scalar fitness. We bring loss search to supervised multi-objective GBDT
 ranking with LLM mutations over full gradient code, and report the outcome
 honestly: on this dataset the objective family's headroom sits below any
 loop-affordable noise floor, so discovered losses do not transfer, a negative
 result this literature has no analog of.
 
-\textbf{Reflective feedback for LLM optimization.} Reflexion, ProTeGi, OPRO,
-and GEPA show that richer textual feedback (traces, textual gradients)
+\textbf{Reflective feedback for LLM optimization.} Reflexion~\cite{reflexion},
+ProTeGi~\cite{protegi}, OPRO~\cite{opro}, and GEPA~\cite{gepa} show that richer textual feedback (traces, textual gradients)
 improves LLM-driven search. We test the assumption under controlled
 conditions and measure its boundary: gradient-introspective feedback, a new
 feedback type possible because the evolved artifact is a differentiable loss,
@@ -127,18 +129,19 @@ changed nothing about what transferred across three seeds, while a data-side
 fix to the fitness signal tripled transfer. Feedback content proved a speed
 and interpretability lever, not a truth lever.
 
-\textbf{Agentic AutoML and LLM feature engineering.} CAAFE generates features
-for tabular classification; AIDE, ML-Agent, MLZero, and related agents
-iterate over ML pipelines, typically evaluated by single-objective validation
+\textbf{Agentic AutoML and LLM feature engineering.} CAAFE~\cite{caafe}
+generates features for tabular classification; AIDE~\cite{aide},
+ML-Agent~\cite{mlagent}, and related agents iterate over ML pipelines, typically evaluated by single-objective validation
 accuracy. Our deltas are the ranking domain (query-grouped data, within-query
 rank features, per-query ensembling), transfer-audited selection as the
 acceptance criterion, and a measured catalog of agent-specific leakage modes
 in target encoding (naive, leave-one-out, and query-folded out-of-fold, each
 quantified).
 
-\textbf{LTR foundations and the benchmark.} LambdaMART remains the GBDT
-ranking standard; the ICDM 2013 challenge solutions document the feature
-recipes and per-query z-score ensembles that won; a 2024 survey notes that
+\textbf{LTR foundations and the benchmark.} LambdaMART~\cite{lambdamart}
+remains the GBDT ranking standard; the ICDM 2013 challenge
+solutions~\cite{liu2013} document the feature
+recipes and per-query z-score ensembles that won; a 2024 survey~\cite{survey2024} notes that
 public datasets with monetary outcome labels remain scarce, anchoring open
 multi-objective work to this benchmark. Our loop autonomously rediscovers the
 load-bearing structure of those hand-built solutions and extends it, in about
@@ -148,9 +151,8 @@ all objectives at every scale tested.
 \section{System and Audit Methodology}
 
 \subsection{Background: the evolutionary engine}
-%% TODO: add citation for the SkyDiscover framework once its reference is public.
 EvoRank builds on SkyDiscover, an open framework for LLM-guided evolutionary
-program search in the AlphaEvolve family. The unit of evolution is a source
+program search in the AlphaEvolve family~\cite{alphaevolve,adaevolve}. The unit of evolution is a source
 file in which mutable regions are delimited by EVOLVE-BLOCK markers;
 everything outside the markers is frozen, which is how we constrain what the
 search may change. Each iteration performs one cycle: sample a parent program
@@ -163,7 +165,7 @@ database. For readers who know classical evolutionary computation: the LLM
 replaces hand-designed mutation and crossover operators, and the prompt
 context plays the role of the mating pool.
 
-We use SkyDiscover's AdaEvolve search controller. Its program database is an
+We use SkyDiscover's AdaEvolve search controller~\cite{adaevolve}. Its program database is an
 island model (two islands here, with dynamic spawning of further islands on
 stagnation, up to five) with periodic ring migration of top programs,
 which maintains diversity by evolving semi-isolated subpopulations. Island
@@ -189,8 +191,8 @@ the best achievable ordering, so 1.0 is a perfect ranking. We compute it per
 query and average (for revenue we instead pool dollars across queries, so
 high-value queries weigh more).
 
-\emph{GBDT and LambdaMART.} Gradient-boosted decision trees (XGBoost,
-LightGBM) fit an additive sequence of small trees, each correcting the
+\emph{GBDT and LambdaMART.} Gradient-boosted decision trees
+(XGBoost~\cite{xgboost}, LightGBM~\cite{lightgbm}) fit an additive sequence of small trees, each correcting the
 previous ones via gradients of a loss. LambdaMART is the ranking instance:
 for every within-query pair where item $i$ outranks item $j$ in the labels,
 it applies a pairwise logistic gradient scaled by how much swapping the two
@@ -200,7 +202,8 @@ it; our campaign-1 candidates are hand-written variants of exactly this
 gradient function.
 
 \emph{Hyperparameter tuning with Optuna.} A GBDT's quality depends on
-learning rate, tree depth, subsampling, and regularization. Optuna searches
+learning rate, tree depth, subsampling, and regularization.
+Optuna~\cite{optuna} searches
 that space with a Bayesian strategy (TPE), proposing configurations, scoring
 each on validation data, and concentrating trials where scores improve. Our
 baselines get 40 trials, re-run in every data regime we report, because
@@ -362,7 +365,11 @@ The full-data regime required its own rigor step and yields a methodology
 lesson (Table~\ref{tab:fullscale}): against a baseline tuned in the fast
 regime the pipelines win easily, but re-tuning the baseline at full scale
 reverses that naive verdict, and only a config-equalized comparison isolates
-the discovered structure, which then wins on all four reported numbers.
+the discovered structure, which then wins on all four reported numbers. A
+decomposition attributes the margin to both discovered components: the
+features alone, under the same tuned single model, reach 0.4587 NDCG@10
+(+0.0043 over the strict baseline), and the ensemble adds a further +0.0032
+to 0.4619.
 Relative to the ICDM 2013 challenge report (0.531 NDCG@38 on a hidden,
 unreproducible leaderboard, from a 12-model hand-built ensemble trained on
 the full data), our numbers are a comparable-protocol approximation on our
@@ -374,10 +381,19 @@ same loop produced noise in one and transfer-audited Pareto dominance in the
 other. The deciding quantity is measurable in advance: the ratio of
 achievable effect sizes to fitness-fold noise. We suggest a headroom gate as
 cheap preregistration for discovery loops, and transfer-audited selection as
-the reporting standard. Guidance (prompt knowledge, evidence-rich feedback)
+the reporting standard. The positive result is also not specific to the
+search algorithm: a threshold-recalibrated AdaEvolve and an EvoX
+meta-evolution variant~\cite{evox}, each run at double budget, land within
+the original campaign's seed spread on the held-out fold, consistent with
+headroom and evaluation fidelity, not search sophistication, governing
+outcomes. Guidance (prompt knowledge, evidence-rich feedback)
 is a speed and interpretability lever, but in our measurements evaluator-side
 investment (larger fitness folds, leakage-safe statistics, stage-attributed
-rejection messages the model learns from) carried more of the outcome.
+rejection messages the model learns from) carried more of the outcome. The
+economics compound this: a full campaign costs about ten dollars and two
+unattended hours, so the relevant unit is gain per human hour, and the
+hand-built solutions whose structure our loop reconstructs took a
+seven-person team a competition season.
 
 Limitations: one dataset, though newer public datasets lack conversion and
 revenue labels, which is precisely why open multi-objective LTR remains
@@ -393,22 +409,67 @@ the search space offers effect sizes the fitness signal can resolve. Code,
 configs, seeds, per-iteration logs, discovered programs, and audit scripts
 are released at \url{https://github.com/shabazpatel/evorank}.
 
-%% TODO: replace with a proper .bib once citations are finalized.
-\begin{thebibliography}{9}
-\bibitem{liu2013} X. Liu et al. Combination of Diverse Ranking Models for
-Personalized Expedia Hotel Searches. arXiv:1311.7679, 2013.
-\bibitem{wang2018} X. Wang et al. The LambdaLoss Framework for Ranking Metric
-Optimization. CIKM, 2018.
-\bibitem{survey2024} A Survey on E-Commerce Learning to Rank.
-arXiv:2412.03581, 2024.
-\bibitem{reflexion} N. Shinn et al. Reflexion: Language Agents with Verbal
-Reinforcement Learning. NeurIPS, 2023.
-\bibitem{protegi} R. Pryzant et al. Automatic Prompt Optimization with
-Gradient Descent and Beam Search. EMNLP, 2023.
-\bibitem{caafe} N. Hollmann et al. Large Language Models for Automated Data
-Science: Introducing CAAFE. NeurIPS, 2023.
-\bibitem{autolosszero} H. Li et al. AutoLoss-Zero: Searching Loss Functions
-from Scratch for Generic Tasks. CVPR, 2022.
+\begin{thebibliography}{99}
+\bibitem{funsearch} B. Romera-Paredes, M. Barekatain, A. Novikov, et al.
+Mathematical discoveries from program search with large language models.
+Nature 625:468--475, 2024.
+\bibitem{alphaevolve} A. Novikov, N. V\~{u}, M. Eisenberger, et al.
+AlphaEvolve: A coding agent for scientific and algorithmic discovery.
+arXiv:2506.13131, 2025.
+\bibitem{rea} Meta Engineering. Ranking Engineer Agent (REA): Autonomous AI
+system accelerating Meta's ads ranking innovation. Engineering at Meta blog,
+March 2026.
+\bibitem{adaevolve} M. Cemri, S. Agrawal, A. Gupta, et al. AdaEvolve:
+Adaptive LLM Driven Zeroth-Order Optimization. arXiv:2602.20133, 2026.
+\bibitem{evox} S. Liu, S. Agarwal, M. Maheswaran, et al. EvoX:
+Meta-Evolution for Automated Discovery. arXiv:2602.23413, 2026.
+\bibitem{glo} S. Gonzalez and R. Miikkulainen. Improved training speed,
+accuracy, and data utilization through loss function optimization. IEEE
+Congress on Evolutionary Computation, 2020.
+\bibitem{amlfs} C. Li, X. Yuan, C. Lin, et al. AM-LFS: AutoML for Loss
+Function Search. ICCV, 2019.
+\bibitem{autolosszero} H. Li, T. Fu, J. Dai, et al. AutoLoss-Zero: Searching
+Loss Functions from Scratch for Generic Tasks. CVPR, 2022.
+\bibitem{cseautoloss} P. Liu, G. Zhang, B. Wang, et al. Loss Function
+Discovery for Object Detection via Convergence-Simulation Driven Search.
+ICLR, 2021.
+\bibitem{lambdaloss} X. Wang, C. Li, N. Golbandi, M. Bendersky, and
+M. Najork. The LambdaLoss Framework for Ranking Metric Optimization. CIKM,
+2018.
+\bibitem{rankevolve} J. Nian, F. Li, D. H. Park, and Y. Fang. RankEvolve:
+Automating the Discovery of Retrieval Algorithms via LLM-Driven Evolution.
+arXiv:2602.16932, 2026.
+\bibitem{reflexion} N. Shinn, F. Cassano, A. Gopinath, K. Narasimhan, and
+S. Yao. Reflexion: Language agents with verbal reinforcement learning.
+NeurIPS, 2023.
+\bibitem{protegi} R. Pryzant, D. Iter, J. Li, Y. T. Lee, C. Zhu, and
+M. Zeng. Automatic Prompt Optimization with ``Gradient Descent'' and Beam
+Search. EMNLP, 2023.
+\bibitem{opro} C. Yang, X. Wang, Y. Lu, et al. Large Language Models as
+Optimizers. ICLR, 2024.
+\bibitem{gepa} L. Agrawal, S. Tan, D. Soylu, et al. GEPA: Reflective prompt
+evolution can outperform reinforcement learning. arXiv:2507.19457, 2025.
+\bibitem{caafe} N. Hollmann, S. M\"{u}ller, and F. Hutter. Large Language
+Models for Automated Data Science: Introducing CAAFE for Context-Aware
+Automated Feature Engineering. NeurIPS, 2023.
+\bibitem{aide} Z. Jiang, D. Schmidt, D. Srikanth, et al. AIDE: AI-Driven
+Exploration in the Space of Code. arXiv:2502.13138, 2025.
+\bibitem{mlagent} Z. Liu, J. Chai, X. Zhu, et al. ML-Agent: Reinforcing LLM
+Agents for Autonomous Machine Learning Engineering. arXiv:2505.23723, 2025.
+\bibitem{lambdamart} C. J. C. Burges. From RankNet to LambdaRank to
+LambdaMART: An overview. Microsoft Research Technical Report MSR-TR-2010-82,
+2010.
+\bibitem{liu2013} X. Liu, B. Xu, Y. Zhang, et al. Combination of Diverse
+Ranking Models for Personalized Expedia Hotel Searches. arXiv:1311.7679,
+2013.
+\bibitem{survey2024} M. A. Kabir, M. A. Hasan, A. Mandal, D. Tunkelang, and
+Z. Wu. A Survey on E-Commerce Learning to Rank. arXiv:2412.03581, 2024.
+\bibitem{optuna} T. Akiba, S. Sano, T. Yanase, T. Ohta, and M. Koyama.
+Optuna: A Next-generation Hyperparameter Optimization Framework. KDD, 2019.
+\bibitem{xgboost} T. Chen and C. Guestrin. XGBoost: A Scalable Tree Boosting
+System. KDD, 2016.
+\bibitem{lightgbm} G. Ke, Q. Meng, T. Finley, et al. LightGBM: A Highly
+Efficient Gradient Boosting Decision Tree. NeurIPS, 2017.
 \end{thebibliography}
 
 \end{document}

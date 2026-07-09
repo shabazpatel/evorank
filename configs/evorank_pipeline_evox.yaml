@@ -1,0 +1,131 @@
+# EvoRank-Pipeline campaign config (Part 2): features + model + loss + ensemble.
+max_iterations: 100
+checkpoint_interval: 5
+log_level: "INFO"
+random_seed: 0
+language: python
+diff_based_generation: true
+max_solution_length: 30000
+
+llm:
+  api_base: "https://api.anthropic.com/v1/"
+  api_key: ${ANTHROPIC_API_KEY}
+  models:
+    - name: "claude-sonnet-5"
+      weight: 1.0
+  temperature: null
+  max_tokens: 8192
+  timeout: 300
+
+search:
+  type: "evox"
+  num_context_programs: 4
+  database:
+    config_path: "evorank/configs/evox_internal.yaml"
+
+prompt:
+  system_message: |
+    You are discovering a full ranking pipeline for e-commerce hotel search:
+    feature construction, model selection, loss selection, and ensemble
+    architecture. The program has two EVOLVE blocks.
+
+    Block features: def build_features(df, stats). df has one row per shown
+    hotel with SEMANTIC columns (price_usd, prop_starrating, prop_review_score,
+    prop_location_score1, prop_location_score2, prop_log_historical_price,
+    prop_brand_bool, prop_id, prop_country_id, promotion_flag, position-free,
+    srch_length_of_stay, srch_booking_window, srch_adults_count,
+    srch_children_count, srch_room_count, srch_saturday_night_bool,
+    srch_query_affinity_score, srch_destination_id, site_id,
+    visitor_hist_starrating, visitor_hist_adr_usd,
+    visitor_location_country_id, orig_destination_distance,
+    comp1..8_rate / _inv / _rate_percent_diff and matching _isna indicators)
+    plus qid. Label columns are absent. stats is a leakage-safe train-fold
+    helper: stats.count(df, col); stats.rate(df, col, "booking"|"click")
+    (K-fold out-of-fold on train, rejected for sparse columns, use
+    low-cardinality columns); stats.quantile(col, q); stats.stacked_score(df).
+    Within-query transforms are encouraged: df.groupby("qid")[col].rank().
+    Return a numeric DataFrame aligned to df, at most 300 columns.
+
+    Block pipeline: PIPELINE dict with "models" (1 to 3 members) and
+    "ensemble". Member families and objectives (loss selection):
+      xgb: rank:ndcg, rank:pairwise, reg:squarederror, binary:logistic,
+           custom:seed, custom:simplified (discovered LambdaMART variants);
+           params: eta, max_depth, min_child_weight, subsample,
+           colsample_bytree, gamma, lambda, num_boost_round (<=300)
+      lgbm: lambdarank, regression, binary; params: learning_rate, num_leaves,
+           min_child_samples, n_estimators (<=300), subsample, colsample_bytree
+      sklearn: logistic, rf, ert, ridge; params: n_estimators (<=150),
+           max_depth, min_samples_leaf, alpha, C
+    Ensemble types: single | zscore_weighted (per-query z-score, weighted
+    sum, provide weights) | rank_mean.
+
+    Feedback per candidate is stage-attributed: scores with noise-gated
+    deltas vs the raw-feature baseline (trust only SIGNIFICANT movements),
+    a features line, per-member val ndcg (model and loss evidence), an
+    ensemble line showing the gain over the best single member, and segment
+    deltas. Candidates are kept on a three-objective Pareto frontier (ndcg,
+    book_ndcg, revenue, all higher is better). Aim for significant,
+    generalizable gains, not noise.
+
+    Domain priors you should draw on:
+
+    # Pipeline priors for e-commerce hotel ranking (distilled from the ICDM 2013
+    # challenge literature, notably Liu et al., arXiv 1311.7679)
+
+    Feature construction, where most of the lift lives:
+    - Count encodings of high-cardinality ids (prop_id, srch_destination_id)
+      were the single largest documented gain in the challenge (about +2.4 points
+      NDCG on a GBM). Use stats.count.
+    - Rate encodings (CTR per prop_id, CVR per prop_id or destination) carry
+      behavioral history; they are smoothed and train-fold-only via stats.rate.
+    - Composite price anchors work: ump = exp(prop_log_historical_price) -
+      price_usd, price_diff = visitor_hist_adr_usd - price_usd, starrating_diff,
+      per_fee = price * rooms / guests, total_fee, score2ma =
+      location_score2 * query_affinity, score1d2 = ratio of location scores.
+    - Within-query rank transforms (rank of price_usd, prop_starrating,
+      prop_location_score2 inside the result list) bring listwise information to
+      any model. These were called the most important listwise features.
+    - A stacked linear score on visitor and query columns (stats.stacked_score)
+      reproduces the mechanism of the challenge's top-importance feature.
+    - Missing values: location score 2 imputed with a low train quantile
+      (stats.quantile) beats zero-fill.
+
+    Model and loss selection:
+    - LambdaMART-family rankers (xgb rank:ndcg, lgbm lambdarank) were the
+      strongest single models. Pointwise GBM with count features was competitive.
+    - Binary objectives on booking give diverse errors that ensemble well even
+      when weaker alone. Linear and forest models add diversity cheaply.
+    - Deep models underperformed in the challenge; they are not in the whitelist.
+
+    Ensembling:
+    - Per-query z-score normalization then a weighted linear combination was the
+      challenge winners' final combiner; gains come from DIVERSE members
+      (different family or objective), not from near-duplicates.
+    - Two or three members are enough; weight the stronger member higher.
+
+    Failure modes:
+    - Leakage through target encodings is guarded (train-fold stats, smoothing,
+      prior fallback), but a feature that looks too good on val and adds nothing
+      on unseen data is suspect; prefer features with a causal story.
+    - Feature bloat: more than ~150 columns slows training and dilutes splits.
+    - Ensembles of near-identical members waste budget for no diversity gain.
+
+    Measured on this fold (July 7 headroom gate), strongest first:
+    - Within-query rank features: +0.011 ndcg alone, the top recipe here.
+    - Plus count encodings: +0.013 combined, the best hand-built variant.
+    - Rate encodings are neutral at best on this fold even done correctly
+      (K-fold out-of-fold by query); per-prop rates are rejected as too sparse.
+    - Composite price anchors and the stacked score: neutral alone, may interact.
+    - More features is not better: the 16-feature kitchen sink underperformed
+      ranks plus counts. Prefer few, strong, diverse features.
+    - Ensembles only pay with strong diverse members; a weak member drags the
+      combination below the best single model.
+
+
+evaluator:
+  timeout: 240
+  max_retries: 2
+  cascade_evaluation: false
+
+monitor:
+  enabled: false

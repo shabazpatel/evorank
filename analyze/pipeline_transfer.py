@@ -27,7 +27,7 @@ from eval.evaluator_pipeline import (TrainStats, _combine, _semantic_frames,  # 
 from ltr.dataset import get_dataset  # noqa: E402
 from ltr.metrics import metrics_bundle  # noqa: E402
 
-RUNS = ["pipeline_s0", "pipeline_s1", "pipeline_s2"]
+RUNS = ["pipeline_s0", "pipeline_s1", "pipeline_s2", "pipeline_v2_s0", "pipeline_evox_s0"]
 
 
 def full_test_semantic():

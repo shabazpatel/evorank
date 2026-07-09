@@ -164,7 +164,8 @@ replaces hand-designed mutation and crossover operators, and the prompt
 context plays the role of the mating pool.
 
 We use SkyDiscover's AdaEvolve search controller. Its program database is an
-island model (two islands here) with periodic ring migration of top programs,
+island model (two islands here, with dynamic spawning of further islands on
+stagnation, up to five) with periodic ring migration of top programs,
 which maintains diversity by evolving semi-isolated subpopulations. Island
 selection uses a UCB bandit over decayed improvement rewards, and each island
 adapts its exploration intensity from an accumulated improvement signal, so

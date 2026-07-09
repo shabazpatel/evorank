@@ -39,18 +39,18 @@ construction, model selection, loss selection, and ensemble architecture, for
 multi-objective e-commerce search. On the Expedia ICDM 2013 dataset, with
 relevance, conversion, and revenue as competing objectives, three independent
 EvoRank seeds each converge within 50 iterations (about ten dollars of LLM
-spend) on interpretable pipelines that Pareto-dominate an Optuna-tuned
-LambdaMART on all three objectives on 60k held-out queries, an advantage that
+spend) on interpretable pipelines that beat an Optuna-tuned LambdaMART on
+60k held-out queries, significantly on relevance and conversion and matching
+on revenue, an advantage that
 persists under config-equalized comparison when training on the full
-6.9M-impression dataset. The discovered pipelines independently reconstruct
-and extend the load-bearing structure of the original challenge winners'
-hand-built solutions. What makes these claims trustworthy is the built-in
-honesty harness, and it earns its place through a measured counterexample: an
-earlier campaign of the same loop, evolving only training objectives,
-appeared to work on its selection fold while a transfer audit showed the
-gains were almost entirely fitness noise (per-edit effect sizes below the
-noise floor), and neither seeded domain knowledge nor gradient-introspective
-diagnostic feedback changed what transferred. The deciding quantity is
+6.9M-impression dataset. The discovered pipelines reconstruct and extend the
+load-bearing structure of the challenge winners' hand-built solutions. These
+claims rest on a built-in honesty harness that earned its place through a
+measured counterexample: an earlier campaign of the same loop, evolving only
+training objectives, appeared to work on its selection fold while a transfer
+audit showed the gains were almost entirely fitness noise, and neither
+seeded domain knowledge nor gradient-introspective diagnostic feedback
+changed what transferred. The deciding quantity is
 measurable in advance: search-space headroom relative to fitness noise. We
 package this as a headroom gate that predicts, before any LLM spend, whether
 the loop will pay off, and we release the tool, the audit stack, and a
@@ -90,7 +90,7 @@ that seeded domain knowledge and evidence-rich diagnostic feedback change the
 speed and style of search but not what generalizes; (3) a measured success
 under identical auditing: pointing the same loop at a search space whose
 effect sizes clear the noise floor yields transfer-audited, Pareto-dominant
-pipelines in all three seeds, which independently reconstruct the
+pipelines in all three seeds, which reconstruct and extend the
 load-bearing structure of the ICDM 2013 challenge winners' hand-built
 solutions; and (4) the released tool and audit stack, including a headroom
 gate that predicts, before any LLM spend, whether a search space will reward
@@ -114,20 +114,17 @@ AutoLoss-Zero~\cite{autolosszero}, and CSE-Autoloss~\cite{cseautoloss}
 search loss functions by genetic programming over primitives,
 mostly for vision; LambdaLoss~\cite{lambdaloss} is the hand-derived metric-bound counterpart;
 RankEvolve~\cite{rankevolve} applies evolutionary search to unsupervised lexical retrieval with
-a scalar fitness. We bring loss search to supervised multi-objective GBDT
-ranking with LLM mutations over full gradient code, and report the outcome
-honestly: on this dataset the objective family's headroom sits below any
-loop-affordable noise floor, so discovered losses do not transfer, a negative
-result this literature has no analog of.
+a scalar fitness. We bring loss search to supervised multi-objective GBDT ranking via LLM
+mutations over full gradient code, and report a negative this literature
+lacks: the family's headroom sits below any loop-affordable noise floor, so
+discovered losses do not transfer.
 
 \textbf{Reflective feedback for LLM optimization.} Reflexion~\cite{reflexion},
 ProTeGi~\cite{protegi}, OPRO~\cite{opro}, and GEPA~\cite{gepa} show that richer textual feedback (traces, textual gradients)
-improves LLM-driven search. We test the assumption under controlled
-conditions and measure its boundary: gradient-introspective feedback, a new
-feedback type possible because the evolved artifact is a differentiable loss,
-changed nothing about what transferred across three seeds, while a data-side
-fix to the fitness signal tripled transfer. Feedback content proved a speed
-and interpretability lever, not a truth lever.
+improves LLM-driven search. We measure that assumption's boundary: gradient-introspective feedback, a
+new feedback type possible because the evolved artifact is a differentiable
+loss, changed nothing about what transferred across three seeds, while a
+data-side fix to the fitness signal tripled transfer.
 
 \textbf{Agentic AutoML and LLM feature engineering.} CAAFE~\cite{caafe}
 generates features for tabular classification; AIDE~\cite{aide},
@@ -150,9 +147,27 @@ all objectives at every scale tested.
 
 \section{System and Audit Methodology}
 
+\begin{figure}
+  \centering
+  \includegraphics[width=\linewidth]{flowchart.pdf}
+  \caption{The EvoRank system. Lane A: frozen data preparation producing a
+  fast fitness fold and a large held-out fold. Lane B: the evolution loop,
+  one LLM call per iteration, cycling from the Pareto program database
+  through prompt building, LLM mutation of the candidate's EVOLVE blocks
+  (campaign 1: a gradient objective; campaign 2: feature code plus a model,
+  loss, and ensemble specification), guardrailed evaluation, and
+  three-objective scoring; degenerate candidates return explanatory
+  rejection messages. The seeded knowledge base (dashed) is the campaign 1
+  ablation treatment. Lane C: the honesty harness, the headroom gate before
+  any spend, per-regime-tuned reference baselines, and the transfer audit
+  that rescores every selected program on the held-out fold.}
+  \label{fig:system}
+\end{figure}
+
 \subsection{Background: the evolutionary engine}
 EvoRank builds on SkyDiscover, an open framework for LLM-guided evolutionary
-program search in the AlphaEvolve family~\cite{alphaevolve,adaevolve}. The unit of evolution is a source
+program search in the AlphaEvolve family~\cite{alphaevolve,adaevolve};
+Figure~\ref{fig:system} shows the assembled system. The unit of evolution is a source
 file in which mutable regions are delimited by EVOLVE-BLOCK markers;
 everything outside the markers is frozen, which is how we constrain what the
 search may change. Each iteration performs one cycle: sample a parent program
@@ -202,33 +217,27 @@ it; our campaign-1 candidates are hand-written variants of exactly this
 gradient function.
 
 \emph{Hyperparameter tuning with Optuna.} A GBDT's quality depends on
-learning rate, tree depth, subsampling, and regularization.
-Optuna~\cite{optuna} searches
-that space with a Bayesian strategy (TPE), proposing configurations, scoring
-each on validation data, and concentrating trials where scores improve. Our
+learning rate, depth, subsampling, and regularization. Optuna~\cite{optuna}
+searches that space with Bayesian trials scored on validation data. Our
 baselines get 40 trials, re-run in every data regime we report, because
-optimal depth and round counts change with training-set size.
+optimal configurations change with training-set size.
 
 \emph{Ensembling by per-query z-scores.} Different model families make
-partially independent errors. Scores from different models live on different
-scales, so within each query we standardize every model's scores to zero mean
-and unit variance, then take a weighted sum. This was the combiner of choice
-among the original challenge winners and is what our discovered pipelines
-select.
+partially independent errors; because their scores live on different scales,
+each model's scores are standardized within each query before a weighted
+sum. This was the challenge winners' combiner of choice and is what our
+discovered pipelines select.
 
 \emph{Out-of-fold target encoding.} Encoding a categorical column by the
-average label of its value (for example, a hotel's historical booking rate)
-is powerful but leaks labels into features if computed naively. The safe
-construction splits the training data into folds by query and encodes each
-row using statistics from the other folds only. Section 6 quantifies what
-goes wrong otherwise.
+average label of its value (a hotel's historical booking rate) leaks labels
+into features unless each row is encoded using statistics from other
+query-folds only. Section 5 quantifies what goes wrong otherwise.
 
-\emph{The statistics.} A paired query bootstrap resamples queries with
-replacement and recomputes a metric difference between two systems thousands
-of times, yielding confidence intervals that respect the query as the unit of
-noise. Pareto dominance says pipeline A beats B only if A is at least as good
-on every objective and better on one; hypervolume measures how much objective
-space a set of non-dominated solutions covers.
+\emph{The statistics.} A paired query bootstrap resamples queries and
+recomputes the metric difference between two systems thousands of times,
+giving intervals that treat the query as the unit of noise. Pareto dominance
+means at least as good on every objective and better on one; hypervolume
+measures how much objective space the non-dominated set covers.
 
 \subsection{Task, data, and evaluators}
 Data is the public Expedia Personalized Hotel Search training file (9.9M
@@ -268,11 +277,10 @@ objectives gain $+0.0004$ to $+0.0014$ NDCG@10 on held-out queries, the best
 evolved objective beats its own seed by $+0.0002$ ($p=0.76$), an equal-budget
 random search transfers as well or better ($p=0.03$ in its favor), and every
 method is significantly below the tuned baseline ($p=0.0002$). The mechanism
-is measured: per-edit effect sizes of 0.002 to 0.005 against a selection-fold
-noise floor of $\pm 0.008$ to $0.015$ (1.6k queries). Enlarging the fitness
-fold to 6k queries, nearly free since evaluation cost is training-dominated,
-halves the noise and triples the mean transferred gain, and is the only
-intervention that moved transfer.
+is measured: per-edit effect sizes of 0.002 to 0.005 against a
+selection-fold noise floor of $\pm 0.008$ to $0.015$. Enlarging the fitness
+fold to 6k queries halves the noise and triples mean transferred gain, the
+only intervention that moved transfer.
 
 Guidance ablations: seeding the prompt with curated domain knowledge reaches
 the random-search-budget level on the selection fold in 1 to 3 iterations
@@ -280,17 +288,15 @@ versus 7 to 23 without it, and wins three-objective hypervolume in every seed
 (mean 252 vs 230, $\times 10^{-6}$), with unchanged transfer. A diagnostic
 feedback channel (noise-gated deltas, segment decomposition, a one-step
 gradient alignment probe, per-signal gradient-usage probes) is flat across
-three seeds on every endpoint. One probe byproduct is worth reporting: the
-best discovered revenue term moves only 0.09 percent of gradient mass while
-removing it costs 0.009 revenue, so small but systematic gradient biases
-compound across boosting rounds.
+three seeds on every endpoint. One probe byproduct: the best discovered revenue term moves only 0.09
+percent of gradient mass while removing it costs 0.009 revenue, so small but
+systematic gradient biases compound across boosting rounds.
 
-Mechanism ablation outperformed further search: knocking out components of
-the best discovered objective attributed its behavior and revealed that its
-per-query adaptive blending was harmful; a constant blend improved all three
-metrics at the cost of five evaluations. At full data scale the objective
-family is a plateau: all objectives, including default rank:ndcg, land within
-0.001 NDCG@10 of each other.
+Mechanism ablation outperformed further search: knockouts attributed the
+best objective's behavior and revealed its per-query adaptive blending was
+harmful (a constant blend improved all three metrics), at the cost of five
+evaluations. At full scale the family is a plateau: everything, including
+default rank:ndcg, lands within 0.001 NDCG@10.
 
 \section{Campaign 2: Pipeline Space, a Measured Positive}
 The second campaign evolves two blocks: feature-construction code over
@@ -302,6 +308,35 @@ averaging). Feedback is stage-attributed so the loop can tell which axis
 earned each change: a features line, per-member validation scores, the
 ensemble's margin over its best member, noise-gated metric deltas, and
 segment decompositions.
+
+Figure~\ref{fig:feedback} shows the feedback artifact verbatim; this
+string, attached to each candidate in the prompt, is what the search learns
+from.
+
+\begin{figure}
+\footnotesize
+\begin{verbatim}
+scores: ndcg=0.4357 (+0.0139 vs seed, +/-0.0054, SIGNIFICANT) |
+  book_ndcg=0.4604 (+0.0142, SIGNIFICANT) | revenue=0.4309 (+0.0217, SIGNIFICANT)
+features: 80 columns (71 raw + 9 engineered: price_usd_qrank,
+  prop_starrating_qrank, prop_review_score_qrank, prop_location_score1_qrank,
+  prop_location_score2_qrank, prop_log_historical_price_qrank, prop_id_count,
+  dest_count), build 0.6s
+members: [0] xgb/rank:ndcg: val ndcg 0.4325 (2s)
+         [1] lgbm/lambdarank: val ndcg 0.4261 (4s)
+         [2] sklearn/ert: val ndcg 0.4171 (28s)
+ensemble: zscore_weighted [0.55, 0.33, 0.12] = 0.4357,
+  best single 0.4325 (+0.0033)
+segments: booked-q ndcg 0.461 (+0.014 vs seed) | click-only 0.379 (+0.013)
+\end{verbatim}
+\caption{Stage-attributed feedback for one campaign 2 candidate, verbatim
+from the run logs. Deltas are noise-gated against the seed pipeline
+reference; per-member lines attribute quality to model and loss choices; the
+ensemble line reports the margin over the best single member. Rejected
+candidates instead receive an explanatory message, for example the sparsity
+floor explaining that per-item rate encodings are data-starved.}
+\label{fig:feedback}
+\end{figure}
 
 A headroom gate precedes any LLM spend: a hand-built candidate from the ICDM
 2013 literature must clear 2.5 times the noise floor, and within-query rank
@@ -333,15 +368,29 @@ audit before any search depended on it.
 \end{table}
 
 Three seeds, 50 iterations each, about 150 LLM calls and ten dollars per
-seed, independently converged on the same interpretable core: five
+seed, converged on the same interpretable core: five
 within-query percentile ranks (price, star rating, review score, location
 scores), count encodings of property and destination identifiers, a lean 20
 to 30 column feature set whose program comments cite the measured bloat
 evidence, and a diverse three-member ensemble (XGBoost rank:ndcg, LightGBM
 lambdarank, plus an extra-trees or binary member) under per-query z-score
-weighting. Table~\ref{tab:transfer} shows the transfer audit: roughly 70
+weighting. One provenance distinction matters for the discovery claim: the
+seeded priors included the gate's finding that rank and count features carry
+headroom, so their presence is partly prompted; the specific constructions,
+the model, loss, ensemble, and weight selections, and the unprompted
+inventions (per-query price z-normalization, quantile imputation of a
+heavy-missing location score) are the search's own, and the transfer-audited
+gains are independent of provenance. Table~\ref{tab:transfer} shows the
+transfer audit: roughly 70
 percent of selection-fold gains survive on 60k held-out queries, and all
-three seeds beat the tuned baseline.
+three seeds beat the tuned baseline. A paired query bootstrap (10,000
+resamples) makes the headline formal: the best seed beats the tuned baseline
+by +0.0057 NDCG@10 (95 percent CI [0.0041, 0.0073], one-sided p < 0.0001)
+and +0.0056 booking NDCG@10 (p < 0.0001), while the revenue delta is
+positive but within noise (+0.0008, CI [-0.0034, 0.0047]); the
+config-equalized full-scale comparison shows the same pattern (+0.0075
+NDCG@10, CI [0.0060, 0.0091], p < 0.0001). The frontier claim is therefore
+precise: significantly better relevance and conversion at matching revenue.
 
 \begin{table}
   \caption{Full-scale comparison (trained on 280k queries, tested on 60k),

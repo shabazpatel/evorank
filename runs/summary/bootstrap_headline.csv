@@ -1,0 +1,3 @@
+comparison,ndcg_delta,ndcg_ci95,ndcg_p_onesided,book_ndcg_delta,book_ndcg_ci95,book_ndcg_p_onesided,revenue_delta,revenue_ci95,revenue_p_onesided
+pipeline_s2_vs_optuna_fastregime,0.00566,"[0.00409,0.00728]",0.0001,0.00557,"[0.00358,0.00756]",0.0001,0.00078,"[-0.00336,0.00470]",0.3438
+deepcfg_vs_optuna_full_fullscale,0.00754,"[0.00601,0.00906]",0.0001,0.00783,"[0.00597,0.00971]",0.0001,0.00193,"[-0.00746,0.00857]",0.2921

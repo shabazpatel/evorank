@@ -1,121 +1,137 @@
-"""Render the EvoRank system flowchart as high-resolution PNG and vector PDF.
+"""Render the EvoRank system figure for the paper (Figure 1).
 
-Reproducible paper figure, no browser or mermaid dependency.
+Academic style: restrained monochrome boxes, one accent color reserved for
+the honesty harness (the paper's contribution), three labeled lanes, and the
+full pipeline including the headroom gate and the transfer audit.
 
-    uv run python paper/figures/make_flowchart.py
+    uv run python make_flowchart.py
 """
 from __future__ import annotations
 
-import pathlib
+import matplotlib
 
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
-HERE = pathlib.Path(__file__).resolve().parent
+INK = "#222222"
+EDGE = "#555555"
+FILL = "#f8f8f8"
+ACCENT = "#1f4e79"       # honesty harness
+ACCENT_FILL = "#eaf1f8"
+GUIDE_EDGE = "#8a6d1a"   # knowledge base (dashed, optional)
+GUIDE_FILL = "#fdf8ea"
+LANE = "#666666"
 
-FILL = {"data": "#eef3fb", "loop": "#eefaf0", "kb": "#fff7e0", "base": "#f6eef9"}
-EDGE = {"data": "#4a6fa5", "loop": "#3f8f5f", "kb": "#b8860b", "base": "#7d5a96"}
+fig, ax = plt.subplots(figsize=(13.2, 8.0), dpi=300)
+ax.set_xlim(0, 1)
+ax.set_ylim(0, 1)
+ax.axis("off")
 
 
-def box(ax, x, y, w, h, title, lines, kind, dashed=False, title_size=10.5, body_size=9.0):
+def box(x, y, w, h, title, lines, edge=EDGE, fill=FILL, dashed=False, title_color=INK):
     ax.add_patch(FancyBboxPatch(
-        (x, y), w, h, boxstyle="round,pad=0.012",
-        facecolor=FILL[kind], edgecolor=EDGE[kind],
-        linewidth=1.6, linestyle="--" if dashed else "-", zorder=2))
-    cx = x + w / 2
-    ax.text(cx, y + h - 0.030, title, ha="center", va="top",
-            fontsize=title_size, fontweight="bold", zorder=3)
-    if lines:
-        body = "\n".join(lines)
-        ax.text(cx, y + h - 0.072, body, ha="center", va="top",
-                fontsize=body_size, linespacing=1.35, zorder=3)
+        (x, y), w, h, boxstyle="round,pad=0.008,rounding_size=0.012",
+        linewidth=1.1, edgecolor=edge, facecolor=fill,
+        linestyle=(0, (4, 3)) if dashed else "solid"))
+    ax.text(x + w / 2, y + h - 0.030, title, ha="center", va="center",
+            fontsize=10.5, fontweight="bold", color=title_color)
+    body = "\n".join(lines)
+    ax.text(x + w / 2, y + (h - 0.052) / 2, body, ha="center", va="center",
+            fontsize=8.8, color=INK, linespacing=1.45)
 
 
-def arrow(ax, p0, p1, dashed=False, color="#333333", rad=0.0, lw=1.7):
+def arrow(x1, y1, x2, y2, color=INK, dashed=False, lw=1.4, rad=0.0, label=None,
+          lx=0.0, ly=0.0, label_color=None):
     ax.add_patch(FancyArrowPatch(
-        p0, p1, arrowstyle="-|>", mutation_scale=14,
-        linestyle="--" if dashed else "-", color=color,
-        linewidth=lw, connectionstyle=f"arc3,rad={rad}", zorder=4))
+        (x1, y1), (x2, y2), arrowstyle="-|>", mutation_scale=13,
+        linewidth=lw, color=color, shrinkA=2, shrinkB=2,
+        linestyle=(0, (4, 3)) if dashed else "solid",
+        connectionstyle=f"arc3,rad={rad}"))
+    if label:
+        ax.text((x1 + x2) / 2 + lx, (y1 + y2) / 2 + ly, label, ha="center",
+                va="center", fontsize=8.2, style="italic",
+                color=label_color or color)
 
 
-def main() -> None:
-    fig, ax = plt.subplots(figsize=(12.5, 8.2))
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.axis("off")
-
-    # ---------------- data preparation (left column) ----------------
-    ax.text(0.135, 0.975, "Data preparation (frozen)", ha="center", fontsize=12,
-            fontweight="bold", color=EDGE["data"])
-    box(ax, 0.03, 0.80, 0.21, 0.125, "E-commerce search logs",
-        ["10M impressions, 400k queries", "clicks, bookings, revenue"], "data")
-    box(ax, 0.03, 0.60, 0.21, 0.135, "Prepare",
-        ["labels rel / booking / rev", "71 numeric features",
-         "70/15/15 split by query id"], "data")
-    box(ax, 0.03, 0.40, 0.21, 0.125, "Fast subset",
-        ["8k train queries", "one evaluation ~40 s"], "data")
-    box(ax, 0.03, 0.22, 0.21, 0.110, "Full split",
-        ["final reporting"], "data")
-    arrow(ax, (0.135, 0.80), (0.135, 0.737))
-    arrow(ax, (0.135, 0.60), (0.135, 0.527))
-    # Prepare -> Full split, routed outside the column so it crosses no box
-    arrow(ax, (0.03, 0.655), (0.03, 0.29), rad=0.12, color=EDGE["data"])
-
-    # ---------------- evolution loop (center/right) ----------------
-    ax.text(0.615, 0.975, "Evolution loop (one LLM call per iteration)",
-            ha="center", fontsize=12, fontweight="bold", color=EDGE["loop"])
-
-    box(ax, 0.335, 0.76, 0.205, 0.155, "Pareto program database",
-        ["3-objective archive", "2 islands, migration", "keeps non-dominated programs"],
-        "loop")
-    box(ax, 0.615, 0.76, 0.205, 0.155, "Prompt builder",
-        ["parent program", "+ 4 context programs", "with scores and feedback"], "loop")
-    box(ax, 0.615, 0.545, 0.205, 0.130, "LLM mutation",
-        ["rewrites the EVOLVE block", "structure only, not numbers"], "loop")
-    box(ax, 0.615, 0.335, 0.205, 0.135, "Candidate objective",
-        ["lambdamart_objective(predt,", "rel, booking, rev, slices)",
-         "returns per-row grad, hess"], "loop")
-    box(ax, 0.335, 0.335, 0.205, 0.135, "Guardrailed evaluator",
-        ["XGBoost, fixed hyperparams", "timeout, non-finite reject",
-         "degenerate = zero fitness"], "loop")
-    box(ax, 0.335, 0.545, 0.205, 0.130, "Three metrics + feedback",
-        ["ndcg | book_ndcg | revenue", "feedback string to next prompt"], "loop")
-
-    # knowledge base (the ablation treatment)
-    box(ax, 0.865, 0.76, 0.115, 0.155, "Knowledge base",
-        ["curated LTR priors", "memory-ON", "arm only"], "kb", dashed=True,
-        title_size=10, body_size=8.5)
-
-    # loop arrows (clockwise)
-    arrow(ax, (0.540, 0.838), (0.615, 0.838))                    # DB -> prompt
-    arrow(ax, (0.7175, 0.760), (0.7175, 0.675))                  # prompt -> LLM
-    arrow(ax, (0.7175, 0.545), (0.7175, 0.470))                  # LLM -> candidate
-    arrow(ax, (0.615, 0.4025), (0.540, 0.4025))                  # candidate -> evaluator
-    arrow(ax, (0.4375, 0.470), (0.4375, 0.545))                  # evaluator -> metrics
-    arrow(ax, (0.4375, 0.675), (0.4375, 0.760))                  # metrics -> DB
-    arrow(ax, (0.865, 0.838), (0.820, 0.838), dashed=True, color=EDGE["kb"])
-    arrow(ax, (0.240, 0.4625), (0.335, 0.4200), color=EDGE["data"])  # fast subset -> evaluator
-
-    # ---------------- baselines strip (bottom) ----------------
-    ax.text(0.660, 0.228, "Reference points (same data, same harness)",
-            ha="center", fontsize=12, fontweight="bold", color=EDGE["base"])
-    labels = [
-        ("LambdaMART", "default"),
-        ("LambdaMART", "+ Optuna, 40 trials"),
-        ("LambdaLoss", "NDCG-Loss2"),
-        ("Random objective search", "equal 40-candidate budget"),
-    ]
-    xs = [0.300, 0.465, 0.630, 0.795]
-    for (t, s), x in zip(labels, xs):
-        box(ax, x, 0.065, 0.148, 0.110, t, [s], "base", title_size=9.5, body_size=8.5)
-    arrow(ax, (0.4375, 0.335), (0.4375, 0.252), dashed=True, color=EDGE["base"])
-    ax.text(0.447, 0.288, "compared against", fontsize=8.5, color=EDGE["base"])
-
-    fig.tight_layout()
-    fig.savefig(HERE / "evorank_flowchart.png", dpi=300, bbox_inches="tight")
-    fig.savefig(HERE / "evorank_flowchart.pdf", bbox_inches="tight")
-    print("wrote", HERE / "evorank_flowchart.png", "and .pdf")
+def lane(x, y, text):
+    ax.text(x, y, text, ha="left", va="center", fontsize=11.5,
+            fontweight="bold", color=LANE)
 
 
-if __name__ == "__main__":
-    main()
+# ----------------------------------------------------------------- lanes
+lane(0.015, 0.965, "A. Data (frozen)")
+lane(0.315, 0.965, "B. Evolution loop (one LLM call per iteration)")
+lane(0.015, 0.255, "C. Honesty harness")
+
+# ----------------------------------------------------------------- A: data
+box(0.015, 0.760, 0.220, 0.150, "E-commerce search logs",
+    ["Expedia ICDM 2013", "9.9M impressions, 399k queries", "clicks, bookings, revenue"])
+box(0.015, 0.545, 0.220, 0.150, "Preparation",
+    ["labels rel / booking / revenue", "71 numeric features",
+     "70 / 15 / 15 split by query"])
+box(0.015, 0.330, 0.220, 0.150, "Two evaluation folds",
+    ["fitness fold: 8k train queries,", "5 to 40 s per candidate",
+     "held-out fold: 60k test queries"])
+arrow(0.125, 0.760, 0.125, 0.697)
+arrow(0.125, 0.545, 0.125, 0.482)
+
+# ----------------------------------------------------------------- B: loop
+bw, bh = 0.205, 0.150
+x1, x2 = 0.315, 0.560
+ytop, ymid, ylow = 0.760, 0.545, 0.330
+box(x1, ytop, bw, bh, "Pareto program database",
+    ["archive over ndcg, booking", "ndcg, revenue; islands with", "migration; non-dominated kept"])
+box(x2, ytop, bw, bh, "Prompt builder",
+    ["parent + context programs", "with scores and", "stage-attributed feedback"])
+box(x2, ymid, bw, bh, "LLM mutation",
+    ["rewrites EVOLVE blocks only", "campaign 1: gradient objective",
+     "campaign 2: features + model /", "loss / ensemble spec"])
+box(x2, ylow, bw, bh, "Candidate evaluation",
+    ["guarded training: whitelists,", "clamps, wall budget, leakage-", "safe out-of-fold statistics"])
+box(x1, ymid, bw, bh, "Three-objective scoring",
+    ["ndcg | booking ndcg | revenue", "noise-gated deltas,", "per-member and ensemble lines"])
+box(x1, ylow, bw, bh, "Rejection as teaching",
+    ["degenerate candidates get zero", "fitness plus an explanatory",
+     "message in the next prompt"])
+
+arrow(x1 + bw, ytop + bh / 2, x2, ytop + bh / 2)                     # db -> prompt
+arrow(x2 + bw / 2, ytop, x2 + bw / 2, ymid + bh)                     # prompt -> mutation
+arrow(x2 + bw / 2, ymid, x2 + bw / 2, ylow + bh)                     # mutation -> eval
+arrow(x2, ylow + bh / 2, x1 + bw, ylow + bh / 2)                     # eval -> rejection lane
+arrow(x1 + bw / 2, ylow + bh, x1 + bw / 2, ymid)                     # rejection -> scoring
+arrow(x1 + bw / 2, ymid + bh, x1 + bw / 2, ytop)                     # scoring -> db
+arrow(0.235, 0.340, x2 + bw / 2 - 0.02, 0.322, color=EDGE, lw=1.1, rad=0.22,
+      label="fitness fold", lx=-0.115, ly=-0.052)
+
+# ----------------------------------------------------------------- guidance
+box(0.815, 0.760, 0.170, 0.150, "Seeded knowledge",
+    ["curated domain priors", "in the system prompt", "(ablated; campaign 1", "treatment)"],
+    edge=GUIDE_EDGE, fill=GUIDE_FILL, dashed=True)
+arrow(0.815, 0.835, x2 + bw + 0.004, 0.835, color=GUIDE_EDGE, dashed=True, lw=1.2)
+
+# ----------------------------------------------------------------- C: harness
+hw = 0.300
+box(0.015, 0.045, hw, 0.150, "1. Headroom gate (before spend)",
+    ["hand-built reference candidate must", "clear the fitness noise floor;",
+     "otherwise the loop selects luck"], edge=ACCENT, fill=ACCENT_FILL,
+    title_color=ACCENT)
+box(0.345, 0.045, hw, 0.150, "2. Reference baselines",
+    ["LambdaMART default and Optuna-tuned", "(re-tuned per data regime),",
+     "LambdaLoss, equal-budget random search"], edge=ACCENT, fill=ACCENT_FILL,
+    title_color=ACCENT)
+box(0.675, 0.045, hw, 0.150, "3. Transfer audit (after search)",
+    ["every selected program rescored on the", "60k-query held-out fold with paired",
+     "query bootstrap; only survivors count"], edge=ACCENT, fill=ACCENT_FILL,
+    title_color=ACCENT)
+
+arrow(0.165, 0.195, 0.315, 0.300, color=ACCENT, rad=0.15,
+      label="go / no-go", lx=0.070, ly=-0.012)
+arrow(0.660, 0.330, 0.800, 0.195, color=ACCENT, rad=0.15,
+      label="selected programs", lx=0.088, ly=0.016)
+arrow(0.648, 0.120, 0.672, 0.120, color=ACCENT, lw=1.1)
+arrow(0.342, 0.120, 0.318, 0.120, color=ACCENT, lw=1.1)
+
+fig.savefig("evorank_flowchart.png", bbox_inches="tight", facecolor="white")
+fig.savefig("evorank_flowchart.pdf", bbox_inches="tight", facecolor="white")
+print("wrote evorank_flowchart.png and .pdf")

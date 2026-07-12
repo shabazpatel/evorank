@@ -254,9 +254,9 @@ the raw behavioral signals per impression; training configuration, features,
 and metrics are frozen, and the seed reproduces XGBoost's built-in rank:ndcg
 within noise.
 
-On the fold the loop selects on, evolved objectives beat the default baseline
-and improve steadily. The transfer audit reverses the picture: final selected
-objectives gain $+0.0004$ to $+0.0014$ NDCG@10 on held-out queries, the best
+On its selection fold, evolved objectives beat the default baseline and
+improve steadily. The transfer audit reverses the picture: final selections
+gain $+0.0004$ to $+0.0014$ NDCG@10 on held-out queries, the best
 evolved objective beats its own seed by $+0.0002$ ($p=0.76$), an equal-budget
 random search transfers as well or better ($p=0.03$ in its favor), and every
 method is significantly below the tuned baseline ($p=0.0002$). The mechanism

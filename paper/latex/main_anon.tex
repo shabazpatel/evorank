@@ -40,9 +40,9 @@ randomness of the loop's internal scoring), and neither seeded domain
 knowledge nor richer diagnostic feedback changed what transferred. The deciding quantity is
 measurable in advance: search-space headroom relative to fitness noise. We
 package this as a headroom gate that predicts, before any LLM spend, whether
-the loop will pay off, and we release the tool, the audit stack, and a catalog of
-failure modes with the guardrails that catch them, so teams can apply the
-same procedure to their own ranking stacks.
+the loop will pay off, and we release the tool, the audit stack, and a
+catalog of failure modes with their guardrails, so teams can apply the same
+procedure to their own ranking stacks.
 \end{abstract}
 
 \begin{keywords}
@@ -140,17 +140,16 @@ report, on all objectives at every scale tested.
 \begin{figure}
   \centering
   \includegraphics[width=\linewidth]{flowchart.pdf}
-  \caption{The EvoRank system. Lane A: data preparation, frozen before any
-  search, producing a small fold the loop scores candidates on and a large
-  held-out fold it never sees. Lane B: the evolution loop, one LLM call per
-  iteration: the archive supplies a parent program and rivals, the LLM edits
-  the program's marked blocks, the candidate is trained and scored under
-  guardrails, and plain-language feedback (Figure~2) travels back with the
-  program into the archive; broken candidates return explanations instead of
-  scores. The dashed box is optional expert knowledge in the prompt, ablated
-  in campaign 1. Lane C: the honesty harness that brackets the loop: a
-  pre-spend gate, baselines on equal terms, and the held-out audit that
-  decides what counts as discovered.}
+  \caption{The EvoRank system. Lane A: frozen data preparation producing a
+  small fold the loop scores candidates on and a large held-out fold it
+  never sees. Lane B: the evolution loop, one LLM call per iteration: the
+  archive supplies a parent and rivals, the LLM edits the marked blocks, the
+  candidate is trained and scored under guardrails, and plain-language
+  feedback (Figure~2) travels back with the program; broken candidates
+  return explanations instead of scores. The dashed box is optional expert
+  knowledge, ablated in campaign 1. Lane C: the honesty harness: a pre-spend
+  gate, baselines on equal terms, and the held-out audit that decides what
+  counts as discovered.}
   \label{fig:system}
 \end{figure}
 
@@ -174,9 +173,8 @@ which maintains diversity by evolving semi-isolated subpopulations; a
 bandit allocates iterations to islands by recent improvement, and each
 island adapts its exploration intensity accordingly. The database keeps a Pareto archive over the three objectives (ndcg,
 booking ndcg, pooled dollar-weighted revenue), with a scalar key used only
-for tie-breaking. On
-stagnation the controller can trigger a paradigm step that prompts the LLM
-for a high-level strategy change rather than a local edit. All state is checkpointed, so runs resume exactly and every
+for tie-breaking. On stagnation the controller can prompt the LLM for a
+high-level strategy change rather than a local edit. All state is checkpointed, so runs resume exactly and every
 selected program is preserved with its lineage.
 
 \subsection{Preliminaries: the algorithms in brief}
@@ -224,8 +222,8 @@ measures how much objective space the non-dominated set covers.
 
 \subsection{Task, data, and evaluators}
 Data is the public Expedia Personalized Hotel Search training file (9.9M
-impressions, 399k queries), split 70/15/15 by query, with graded labels (5
-booked, 1 clicked, 0 otherwise). A fast fitness fold (8k training queries; the loop scores every candidate
+impressions, 399k queries), split 70/15/15 by query; graded labels are 5
+booked, 1 clicked, 0 otherwise. A fast fitness fold (8k training queries; the loop scores every candidate
 here, and that score is the candidate's fitness) keeps evaluation between 5
 and 40 seconds; each candidate trains a
 gradient-boosted ranker under a fixed budget and is scored on the fold's
@@ -261,19 +259,17 @@ evolved objective beats its own seed by $+0.0002$ ($p=0.76$), an equal-budget
 random search transfers as well or better ($p=0.03$ in its favor), and every
 method is significantly below the tuned baseline ($p=0.0002$). The mechanism
 is measured: per-edit effect sizes of 0.002 to 0.005 against a
-selection-fold noise floor of $\pm 0.008$ to $0.015$. Enlarging the fitness
-fold to 6k queries halves the noise and triples mean transferred gain, the
-only intervention that moved transfer.
+selection-fold noise floor of $\pm 0.008$ to $0.015$. Enlarging the fitness fold to 6k queries halves the noise and triples mean
+transferred gain, the only intervention that moved it.
 
 Guidance ablations: seeding the prompt with curated domain knowledge
 reaches the random-search-budget level on the selection fold in 1 to 3
 iterations versus 7 to 23 without it, and wins three-objective hypervolume
-in every seed, with unchanged transfer. A diagnostic
-feedback channel (noise-gated deltas, per-segment breakdowns, probes into
-the candidate's actual training gradients) changes nothing measurable across
-three seeds. One probe byproduct: the best discovered revenue term moves only 0.09
-percent of gradient mass while removing it costs 0.009 revenue, so small but
-systematic gradient biases compound across boosting rounds.
+in every seed, with unchanged transfer. A diagnostic feedback channel (noise-gated deltas, per-segment breakdowns,
+probes into the candidate's training gradients) changes nothing measurable
+across three seeds. One probe byproduct: the best discovered revenue term
+moves only 0.09 percent of gradient mass while removing it costs 0.009
+revenue, so small gradient biases compound across rounds.
 
 Mechanism ablation outperformed further search: knockouts attributed the
 best objective's behavior and revealed its per-query adaptive blending was
@@ -344,12 +340,12 @@ was caught by the audit before any search depended on it.
   \end{tabular}
 \end{table}
 
-What the search found: three seeds, 50 iterations and about ten dollars
-each, converged on the same interpretable core: within-query percentile
+What the search found: three seeds, at 50 iterations and ten dollars each,
+converged on the same interpretable core: within-query percentile
 ranks of price, star rating, review and location scores, count encodings of
-property and destination identifiers, a lean 20 to 30 column feature set
-whose comments cite the measured bloat evidence, and a diverse three-member
-ensemble under per-query z-score weighting. One provenance
+property and destination identifiers, a lean feature set whose comments
+cite the measured bloat evidence, and a diverse three-member ensemble under
+per-query z-score weighting. One provenance
 distinction matters: the seeded priors included the gate's finding that rank
 and count features carry headroom, so their presence is partly prompted; the
 specific constructions, the model, loss, ensemble, and weight selections,
@@ -406,9 +402,20 @@ from hindsight, since the winners' published lessons are part of the seeded
 priors.
 
 \section{Discussion}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.92\linewidth]{transfer_contrast.pdf}
+  \caption{The study in one picture: per-seed NDCG@10 gains over the seed
+  program on the selection fold (open) and on 60k held-out queries (filled).
+  Campaign 1's selection-fold gains collapse into the held-out noise band;
+  campaign 2's survive.}
+  \label{fig:contrast}
+\end{figure}
+
 The two campaigns differ in exactly one variable, the search space, and the
 same loop produced noise in one and transfer-audited Pareto dominance in the
-other. The deciding quantity is measurable in advance: the ratio of
+other (Figure~\ref{fig:contrast}). The deciding quantity is measurable in advance: the ratio of
 achievable effect sizes to fitness-fold noise. We suggest the headroom gate as cheap preregistration for discovery
 loops, and transfer-audited selection as the reporting standard. The result is not specific to the search algorithm: a
 recalibrated AdaEvolve and an EvoX meta-evolution variant~\cite{evox}, each

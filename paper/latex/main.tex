@@ -128,11 +128,10 @@ data-side fix to the fitness signal tripled transfer.
 \textbf{Agentic AutoML and LLM feature engineering.} CAAFE~\cite{caafe}
 generates features for tabular classification; AIDE~\cite{aide},
 ML-Agent~\cite{mlagent}, and related agents iterate over ML pipelines, typically evaluated by single-objective validation
-accuracy. Our deltas are the ranking domain (query-grouped data, within-query
-rank features, per-query ensembling), transfer-audited selection as the
-acceptance criterion, and a measured catalog of agent-specific leakage modes
-in target encoding (naive, leave-one-out, and query-folded out-of-fold, each
-quantified).
+accuracy. Our deltas are the ranking domain (query-grouped data, within-query rank
+features, per-query ensembling), transfer-audited selection as the
+acceptance criterion, and a quantified catalog of agent-specific
+target-encoding leakage modes.
 
 \textbf{LTR foundations and the benchmark.} LambdaMART~\cite{lambdamart}
 remains the standard for feature-based ranking, where gradient-boosted trees
@@ -241,14 +240,13 @@ specifications) receive zero fitness with an explanatory message in the
 next prompt, so guardrails double as teaching signals.
 
 \subsection{The audit stack}
-The audit stack, applied identically to every campaign, is the methodological
-core: (a) paired query bootstrap for every comparison, with noise-gated
-deltas inside the loop's own feedback; (b) equal-budget random-search
-controls; (c) symmetric hyperparameter treatment (post-hoc Optuna tuning of
-discovered artifacts at the baseline's budget); (d) a
-selection-generalization audit that rescores every checkpoint's selected program on 60k
-held-out queries; (e) three-objective hypervolume; and (f) mechanism
-ablations of discovered artifacts. Baselines are LambdaMART (the standard
+The audit stack, applied identically to every campaign: (a) paired query
+bootstrap for every comparison, with noise-gated deltas inside the loop's
+own feedback; (b) equal-budget random-search controls; (c) symmetric
+hyperparameter treatment (post-hoc Optuna tuning of discovered artifacts);
+(d) a selection-generalization audit that rescores every checkpoint's
+selection on 60k held-out queries; (e) three-objective hypervolume; and (f)
+mechanism ablations of discovered artifacts. Baselines are LambdaMART (the standard
 gradient-boosted ranking algorithm, XGBoost rank:ndcg) with 40 trials of
 Optuna hyperparameter search, re-tuned separately at every training-set size
 we report, plus an equal-budget random search over the same candidate space as

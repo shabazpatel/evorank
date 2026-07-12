@@ -169,9 +169,9 @@ island model (two islands here, with dynamic spawning of further islands on
 stagnation, up to five) with periodic ring migration of top programs,
 which maintains diversity by evolving semi-isolated subpopulations; a
 bandit allocates iterations to islands by recent improvement, and each
-island adapts its exploration intensity accordingly. The database keeps a Pareto archive over the three objectives (ndcg,
-booking ndcg, pooled dollar-weighted revenue), with a scalar key used only
-for tie-breaking. On stagnation the controller can prompt the LLM for a
+island adapts its exploration intensity accordingly. The database keeps a Pareto archive, the set of best available trade-offs
+over the three objectives (ndcg, booking ndcg, pooled dollar-weighted
+revenue), with a scalar key used only for tie-breaking. On stagnation the controller can prompt the LLM for a
 high-level strategy change rather than a local edit. All state is checkpointed, so runs resume exactly and every
 selected program is preserved with its lineage.
 

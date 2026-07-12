@@ -100,12 +100,11 @@ arrow(x2 + bw / 2, ymid, x2 + bw / 2, ylow + bh)                     # mutation 
 arrow(x2, ylow + bh / 2, x1 + bw, ylow + bh / 2)                     # eval -> rejection lane
 arrow(x1 + bw / 2, ylow + bh, x1 + bw / 2, ymid)                     # rejection -> scoring
 arrow(x1 + bw / 2, ymid + bh, x1 + bw / 2, ytop)                     # scoring -> db
-arrow(0.235, 0.340, x2 + bw / 2 - 0.02, 0.322, color=EDGE, lw=1.1, rad=0.22,
-      label="fitness fold", lx=-0.115, ly=-0.052)
+
 
 # ----------------------------------------------------------------- guidance
 box(0.815, 0.760, 0.170, 0.150, "Seeded knowledge",
-    ["expert ranking know-how", "in the system prompt", "(optional; ablated in", "campaign 1)"],
+    ["expert ranking know-how", "in the system prompt", "(optional; campaign 1 runs", "with and without it)"],
     edge=GUIDE_EDGE, fill=GUIDE_FILL, dashed=True)
 arrow(0.815, 0.835, x2 + bw + 0.004, 0.835, color=GUIDE_EDGE, dashed=True, lw=1.2)
 

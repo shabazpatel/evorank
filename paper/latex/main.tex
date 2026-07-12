@@ -88,8 +88,8 @@ the noise floor of the loop's own scoring; (2) guidance ablations showing
 that seeded domain knowledge and evidence-rich diagnostic feedback change the
 speed and style of search but not what generalizes; (3) the constructive counterpart
 under identical auditing: pointing the same loop at a search space whose
-effect sizes clear the noise floor yields transfer-audited, Pareto-dominant
-pipelines in all three seeds, which reconstruct and extend the
+effect sizes clear the noise floor yields transfer-audited pipelines,
+better on every objective at once, in all three seeds, which reconstruct and extend the
 load-bearing structure of the ICDM 2013 challenge winners' hand-built
 solutions; and (4) the released tool and audit stack, including a headroom
 gate, a cheap pre-check that predicts, before any LLM spend, whether a
@@ -112,8 +112,8 @@ AutoLoss-Zero~\cite{autolosszero}, and CSE-Autoloss~\cite{cseautoloss}
 search loss functions by genetic programming over primitives,
 mostly for vision; LambdaLoss~\cite{lambdaloss} is the hand-derived metric-bound counterpart;
 RankEvolve~\cite{rankevolve} applies evolutionary search to unsupervised
-lexical retrieval with a single-number score. We bring loss search to supervised multi-objective GBDT ranking via LLM
-mutations over full gradient code, and map a boundary this literature has
+lexical retrieval with a single-number score. We bring loss search to supervised multi-objective ranking with
+gradient-boosted trees (GBDT) via LLM mutations over full gradient code, and map a boundary this literature has
 not measured: the family's headroom sits below the noise floor of any
 evaluation fast enough to run inside a loop, so discovered losses do not
 transfer.
@@ -136,8 +136,7 @@ target-encoding leakage modes.
 \textbf{LTR foundations and the benchmark.} LambdaMART~\cite{lambdamart}
 remains the standard for feature-based ranking, where gradient-boosted trees
 still match or beat neural rankers~\cite{qin2021}; the ICDM 2013 challenge
-solutions~\cite{liu2013} document the winning feature recipes and per-query
-z-score ensembles; a 2024 survey~\cite{survey2024} notes that public
+solutions~\cite{liu2013} document the winning feature recipes and score-blending ensembles; a 2024 survey~\cite{survey2024} notes that public
 datasets with monetary outcome labels remain scarce, anchoring open
 multi-objective work to this benchmark. Our loop autonomously rediscovers the
 load-bearing structure of those hand-built solutions and extends it, in about

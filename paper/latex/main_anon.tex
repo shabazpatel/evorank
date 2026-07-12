@@ -253,13 +253,17 @@ metrics are frozen, and the starting version reproduces XGBoost's built-in
 rank:ndcg within noise.
 
 On its selection fold, evolved objectives beat the default baseline and
-improve steadily. The transfer audit reverses the picture: final selections
-gain $+0.0004$ to $+0.0014$ NDCG@10 on held-out queries, the best
-evolved objective beats its own seed by $+0.0002$ ($p=0.76$), an equal-budget
-random search transfers as well or better ($p=0.03$ in its favor), and every
-method is significantly below the tuned baseline ($p=0.0002$). The mechanism
-is measured: per-edit effect sizes of 0.002 to 0.005 against a
-selection-fold noise floor of $\pm 0.008$ to $0.015$. Enlarging the fitness fold's validation side from 1.6k to 6k queries halves
+improve steadily. The transfer audit reverses the picture: final selections gain $+0.0004$
+to $+0.0014$ NDCG@10 on held-out queries, the best evolved objective beats
+its own starting program by $+0.0002$ ($p=0.76$), an equal-budget random
+search transfers as well or better ($p=0.03$ in its favor), and every method
+is significantly below the tuned baseline ($p=0.0002$). In plain terms: on
+unseen data the evolved objectives are indistinguishable from where they
+started, blind mutation did as well as guided search, and ordinary tuning
+beat both. The mechanism is measured: a single edit's true effect is 0.002 to 0.005
+NDCG@10, while the selection fold's measurement noise is $\pm 0.008$ to
+$0.015$, so an edit's effect is smaller than the error in measuring it, and
+picking the best score means picking luck. Enlarging the fitness fold's validation side from 1.6k to 6k queries halves
 that noise and triples the mean gain surviving transfer; it is the only
 intervention that moved transfer.
 
@@ -270,9 +274,9 @@ run; unseeded runs need 7 to 23. Seeded runs also end with a better
 three-objective frontier (higher hypervolume) in every seed. What transfers
 to held-out data is unchanged. A diagnostic feedback channel (noise-gated deltas, per-segment breakdowns,
 probes into the candidate's training gradients) changes nothing measurable
-across three seeds. One probe byproduct: the best discovered revenue term
-moves only 0.09 percent of gradient mass while removing it costs 0.009
-revenue, so small gradient biases compound across rounds.
+across three seeds. One probe byproduct: the best discovered revenue term moves only 0.09
+percent of the total training gradient yet removing it costs 0.009 revenue,
+so even tiny but systematic pressure compounds across boosting rounds.
 
 Analysis beat further search: removing the best objective's components one
 at a time (five evaluations in total) explained its behavior and exposed one
@@ -316,9 +320,10 @@ floor explaining that per-item rate encodings are data-starved.}
 \label{fig:feedback}
 \end{figure}
 
-Before any LLM spend, the headroom gate: a hand-built candidate from the
-ICDM 2013 literature must clear 2.5 times the noise floor, and within-query
-rank features plus count encodings did ($+0.013$ NDCG@10). Building that candidate surfaced three successively subtler leakage bugs,
+Before any LLM spend, the headroom gate: a hand-built candidate from the ICDM 2013 literature must beat the noise
+floor by a wide margin (we required 2.5 times, so real headroom cannot be
+mistaken for luck), and within-query rank features plus count encodings did
+($+0.013$ NDCG@10). Building that candidate surfaced three successively subtler leakage bugs,
 each measured. Encoding a hotel by its booking rate computed on the training
 fold costs $-0.10$ NDCG: the model partly memorizes its own labels. The
 textbook fix, excluding each row's own label from its encoding, is subtly
@@ -389,8 +394,8 @@ this formal: the best seed wins by +0.0057 NDCG@10 (95 percent CI [0.0041,
 0.0073], one-sided p < 0.0001) and +0.0056 booking NDCG@10 (p < 0.0001),
 with revenue positive but within noise (+0.0008, CI [-0.0034, 0.0047]); the
 full-scale comparison shows the same pattern (+0.0075 NDCG@10, p < 0.0001).
-The frontier claim is therefore precise: significantly better relevance and
-conversion at matching revenue.
+The multi-objective claim is therefore precise: significantly better
+relevance and conversion at matching revenue.
 
 \begin{table}
   \caption{Full-scale comparison (trained on 280k queries, tested on 60k),
@@ -410,11 +415,12 @@ conversion at matching revenue.
   \end{tabular}
 \end{table}
 
-The full-data regime required its own rigor step and yields a methodology
-lesson (Table~\ref{tab:fullscale}): against a baseline tuned in the fast
-regime the pipelines win easily, but re-tuning the baseline at full scale
-reverses that naive verdict, and only a config-equalized comparison (the
-same tuned hyperparameters on both sides) isolates the discovered structure,
+Training on the full dataset required its own rigor step and yields a
+methodology lesson (Table~\ref{tab:fullscale}): against a baseline whose
+hyperparameters were tuned on the small fold the pipelines win easily, but
+re-tuning the baseline at full scale reverses that naive verdict, and only a
+comparison with the same tuned hyperparameters on both sides isolates the
+discovered structure,
 which then wins on all four reported numbers. A
 decomposition attributes the margin to both discovered components: the
 features alone, under the same tuned single model, reach 0.4587 NDCG@10

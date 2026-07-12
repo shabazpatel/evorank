@@ -45,19 +45,17 @@ spend) on interpretable pipelines that beat an Optuna-tuned LambdaMART on
 on revenue, an advantage that
 persists when training on the full 6.9M-impression dataset with the same
 tuned settings on both sides. The discovered pipelines reconstruct and extend the
-load-bearing structure of the challenge winners' hand-built solutions. These
-claims rest on a built-in honesty harness that earned its place through a
-measured counterexample: an earlier campaign of the same loop, evolving only
-training objectives, appeared to work on its selection fold while a transfer
-audit showed the gains were almost entirely fitness noise (the run-to-run
-randomness of the loop's internal scoring), and neither
-seeded domain knowledge nor gradient-introspective diagnostic feedback
-changed what transferred. The deciding quantity is
+load-bearing structure of the challenge winners' hand-built solutions. A first campaign of the same
+loop, evolving only training objectives, supplies the study's central design
+rule: it appeared to work on its selection fold while a transfer audit
+showed the gains were almost entirely fitness noise (the run-to-run
+randomness of the loop's internal scoring), and neither seeded domain
+knowledge nor richer diagnostic feedback changed what transferred. The deciding quantity is
 measurable in advance: search-space headroom relative to fitness noise. We
 package this as a headroom gate that predicts, before any LLM spend, whether
-the loop will pay off, and we release the tool, the audit stack, and a
-measured catalog of failure modes, including three generations of
-target-encoding leakage, each caught by the audit.
+the loop will pay off, and we release the tool, the audit stack, and a catalog of
+failure modes with the guardrails that catch them, so teams can apply the
+same procedure to their own ranking stacks.
 \end{abstract}
 
 \begin{keywords}
@@ -85,12 +83,13 @@ steady progress while discovering nothing that transfers.
 We contribute an open, end-to-end audited account of when the pattern works
 and when it silently does not, on a public e-commerce ranking task with three
 competing objectives (relevance, conversion, revenue). Our contributions are:
-(1) a measured failure: evolved training objectives whose gains on the
-selection fold (the small dataset the loop scores candidates on) do not
-survive a held-out transfer audit, with the mechanism quantified: real
-effect sizes smaller than the noise floor of the loop's own scoring; (2) guidance ablations showing
+(1) a quantified boundary condition for when such loops work: evolved
+training objectives whose gains on the selection fold (the small dataset the
+loop scores candidates on) do not survive a held-out transfer audit, for a
+reason teams can check in their own settings, real effect sizes smaller than
+the noise floor of the loop's own scoring; (2) guidance ablations showing
 that seeded domain knowledge and evidence-rich diagnostic feedback change the
-speed and style of search but not what generalizes; (3) a measured success
+speed and style of search but not what generalizes; (3) the constructive counterpart
 under identical auditing: pointing the same loop at a search space whose
 effect sizes clear the noise floor yields transfer-audited, Pareto-dominant
 pipelines in all three seeds, which reconstruct and extend the
@@ -105,8 +104,7 @@ AlphaEvolve~\cite{alphaevolve} pair an LLM
 mutation operator with evolutionary search over programs and automated
 evaluators, with open engines~\cite{adaevolve,evox} reproducing the pattern;
 industrial ranking agents (REA, GEARS)~\cite{rea} apply agentic
-experimentation to production ranking behind closed doors. Results in this genre are overwhelmingly reported on the
-fold the loop selected on. We contribute the missing measurement layer: an
+experimentation to production ranking behind closed doors. We contribute the missing measurement layer: an
 identical loop shown provably selecting noise in one search space and
 provably discovering in another, with the deciding quantity measurable
 before any spend, in the first open, reproducible instance of the pattern
@@ -118,9 +116,10 @@ search loss functions by genetic programming over primitives,
 mostly for vision; LambdaLoss~\cite{lambdaloss} is the hand-derived metric-bound counterpart;
 RankEvolve~\cite{rankevolve} applies evolutionary search to unsupervised
 lexical retrieval with a single-number score. We bring loss search to supervised multi-objective GBDT ranking via LLM
-mutations over full gradient code, and report a negative this literature
-lacks: the family's headroom sits below the noise floor of any evaluation fast
-enough to run inside a loop, so discovered losses do not transfer.
+mutations over full gradient code, and map a boundary this literature has
+not measured: the family's headroom sits below the noise floor of any
+evaluation fast enough to run inside a loop, so discovered losses do not
+transfer.
 
 \textbf{Reflective feedback for LLM optimization.} Reflexion~\cite{reflexion},
 ProTeGi~\cite{protegi}, OPRO~\cite{opro}, and GEPA~\cite{gepa} show that richer textual feedback (traces, textual gradients)
@@ -174,13 +173,11 @@ program search in the AlphaEvolve family~\cite{alphaevolve,adaevolve};
 Figure~\ref{fig:system} shows the assembled system. The unit of evolution is a source
 file in which mutable regions are delimited by EVOLVE-BLOCK markers;
 everything outside the markers is frozen, which is how we constrain what the
-search may change. Each iteration performs one cycle: sample a parent program
-(plus a small set of context programs) from a program database, assemble a
-prompt containing their source, scores, and evaluator feedback, make a single
-LLM call that proposes an edit to the mutable regions, evaluate the resulting
-candidate with a user-supplied \texttt{evaluate(program\_path)} function that
-returns a metric dictionary, and insert the scored candidate back into the
-database. In classical terms, the LLM replaces hand-designed mutation and crossover
+search may change. Each iteration samples a parent (plus context programs) from a
+program database, assembles a prompt with their source, scores, and
+feedback, makes one LLM call that edits the mutable regions, evaluates the
+candidate with a user-supplied \texttt{evaluate} function, and inserts it
+back into the database. In classical terms, the LLM replaces hand-designed mutation and crossover
 operators, and the prompt context plays the role of the mating pool.
 
 We use SkyDiscover's AdaEvolve search controller~\cite{adaevolve}. Its program database is an
@@ -188,11 +185,9 @@ island model (two islands here, with dynamic spawning of further islands on
 stagnation, up to five) with periodic ring migration of top programs,
 which maintains diversity by evolving semi-isolated subpopulations; a
 bandit allocates iterations to islands by recent improvement, and each
-island adapts its exploration intensity accordingly. In
-multi-objective mode the database keeps a Pareto archive: a candidate
-survives if no other program dominates it on all objectives (here ndcg,
-booking ndcg, and a pooled dollar-weighted revenue metric), with a scalar
-fitness key used only for tie-breaking and adaptive-state bookkeeping. On
+island adapts its exploration intensity accordingly. The database keeps a Pareto archive over the three objectives (ndcg,
+booking ndcg, pooled dollar-weighted revenue), with a scalar key used only
+for tie-breaking. On
 stagnation the controller can trigger a paradigm step that prompts the LLM
 for a high-level strategy change rather than a local edit. All state is checkpointed, so runs resume exactly and every
 selected program is preserved with its lineage.
@@ -266,7 +261,7 @@ we report, plus an equal-budget random search over the same candidate space as
 the loop.
 %% TODO: consider a small figure here summarizing the audit stack.
 
-\section{Campaign 1: Objective Space, a Measured Negative}
+\section{Campaign 1: Objective Space, Where the Loop Selects Noise}
 The evolvable artifact is a group-aware LambdaMART gradient with access to
 the raw behavioral signals per impression; training configuration, features,
 and metrics are frozen, and the seed reproduces XGBoost's built-in rank:ndcg
@@ -299,19 +294,15 @@ harmful (a constant blend improved all three metrics), at the cost of five
 evaluations. Trained on the full dataset the family is a plateau: everything, including
 default rank:ndcg, lands within 0.001 NDCG@10 of everything else.
 
-\section{Campaign 2: Pipeline Space, a Measured Positive}
+\section{Campaign 2: Pipeline Space, Where the Loop Discovers}
 The second campaign evolves two blocks: feature-construction code over
 semantically named columns with a leakage-guarded train-fold statistics API,
 and a pipeline specification chosen from a whitelist (one to three members
 from XGBoost, LightGBM, and sklearn families with rank, pointwise, binary, or
 campaign-1 custom losses, combined by per-query z-score weighting or rank
 averaging). Feedback is stage-attributed so the loop can tell which axis
-earned each change: a features line, per-member validation scores, the
-ensemble's margin over its best member, noise-gated metric deltas, and
-segment decompositions.
-
-Figure~\ref{fig:feedback} shows this feedback verbatim; attached to each
-candidate in the prompt, it is what the search learns from.
+earned each change; Figure~\ref{fig:feedback} shows it verbatim, exactly as
+it appears in the next prompt.
 
 \begin{figure}
 \footnotesize
@@ -436,12 +427,11 @@ same loop produced noise in one and transfer-audited Pareto dominance in the
 other. The deciding quantity is measurable in advance: the ratio of
 achievable effect sizes to fitness-fold noise. We suggest a headroom gate as
 cheap preregistration for discovery loops, and transfer-audited selection as
-the reporting standard. The positive result is also not specific to the
-search algorithm: a threshold-recalibrated AdaEvolve and an EvoX
-meta-evolution variant~\cite{evox}, each run at double budget, land within
-the original campaign's seed spread on the held-out fold, consistent with
-headroom and evaluation fidelity, not search sophistication, governing
-outcomes. Guidance (prompt knowledge, evidence-rich feedback)
+the reporting standard. The result is not specific to the search algorithm: a
+recalibrated AdaEvolve and an EvoX meta-evolution variant~\cite{evox}, each
+at double budget, land within the original seed spread on the held-out fold,
+consistent with headroom and evaluation fidelity, not search sophistication,
+governing outcomes. Guidance (prompt knowledge, evidence-rich feedback)
 is a speed and interpretability lever, but in our measurements evaluator-side
 investment (larger fitness folds, leakage-safe statistics, stage-attributed
 rejection messages the model learns from) carried more of the outcome. The economics compound this: a campaign costs about ten dollars and two
@@ -455,12 +445,18 @@ this benchmark); three seeds per condition; revenue is a proxy metric; and
 discovered pipelines were audited for transfer, not online effects.
 
 \section{Conclusion}
-Publishing an audited failure next to an audited success on the same task
-is more useful than either alone. The loop is neither magic nor
-broken: it is a search procedure whose discoveries are real precisely when
-the search space offers effect sizes the fitness signal can resolve. Code,
-configs, seeds, per-iteration logs, discovered programs, and audit scripts
-are released at \url{https://github.com/shabazpatel/evorank}.
+For teams bringing LLM-driven discovery to their own ranking systems, this
+study distills to a working procedure: measure the noise of the evaluation
+you can afford; verify with one hand-built candidate that your search space
+offers effects above that noise; only then run the loop, with leakage-safe
+statistics and rejection messages the model can learn from; and let a
+held-out audit, not the loop's own scores, decide what counts. The loop is
+neither magic nor broken: its discoveries are real precisely when the search
+space offers effect sizes the fitness signal can resolve, and both
+quantities are measurable before any budget is spent. Code, configs, seeds,
+per-iteration logs, discovered programs, and audit scripts are released to
+make the procedure directly reusable, at
+\url{https://github.com/shabazpatel/evorank}.
 
 \begin{thebibliography}{99}
 \bibitem{funsearch} B. Romera-Paredes, M. Barekatain, A. Novikov, et al.

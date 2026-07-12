@@ -190,12 +190,11 @@ selected program is preserved with its lineage.
 \subsection{Preliminaries: the algorithms in brief}
 For readers new to Learning-to-Rank, the recurring machinery is as follows.
 
-\emph{Ranking and NDCG@k.} A search query returns a list of items, each with
-a relevance label. NDCG@k scores how well a model orders each list: relevant
-items placed near the top earn gain discounted by log-position, normalized by
-the best achievable ordering, so 1.0 is a perfect ranking. We compute it per
-query and average (for revenue we instead pool dollars across queries, so
-high-value queries weigh more).
+\emph{Ranking and NDCG@k.} A query returns a list of items with relevance
+labels. NDCG@k scores how well a model orders each list: relevant items near
+the top earn gain discounted by log-position, normalized by the best
+achievable ordering, so 1.0 is perfect. We average it per query (for revenue
+we instead pool dollars, so high-value queries weigh more).
 
 \emph{GBDT and LambdaMART.} Gradient-boosted decision trees
 (XGBoost~\cite{xgboost}, LightGBM~\cite{lightgbm}) fit an additive sequence of small trees, each correcting the

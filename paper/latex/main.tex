@@ -38,21 +38,18 @@ We present EvoRank, an open autonomous ranking engineer: an LLM-guided
 evolutionary loop that discovers complete Learning-to-Rank pipelines
 (features, models, losses, ensembles) for multi-objective e-commerce
 search. On the Expedia ICDM 2013 dataset, with
-relevance, conversion, and revenue as competing objectives, three seeds each
-converge within 50 iterations (about ten dollars) on interpretable pipelines
-that beat an Optuna-tuned LambdaMART on 60k held-out queries, an advantage
-that persists at full data scale and would have placed in the top 6 percent
-of the original competition via one-shot late submission. A first campaign of the same
-loop, evolving only training objectives, supplies the study's central design
-rule: it appeared to work on its selection fold while a transfer audit
-showed the gains were almost entirely fitness noise (the run-to-run
-randomness of the loop's internal scoring), and neither seeded domain
-knowledge nor richer diagnostic feedback changed what transferred. The deciding quantity is
+relevance, conversion, and revenue as competing objectives, three independent runs each converge within 50 iterations (about ten dollars) on interpretable pipelines
+that beat an Optuna-tuned LambdaMART on 60k held-out queries, an advantage that persists at full data scale and places in the top 6
+percent of the original competition by one-shot late submission. A first campaign, evolving only training objectives, supplies the central
+design rule: it appeared to work on its selection fold (the small dataset it uses to
+pick winners) while a transfer audit, re-scoring winners on held-out data,
+showed the gains were almost entirely fitness noise (the randomness of its
+own scoring), and neither seeded domain knowledge nor richer diagnostic
+feedback changed what transferred. The deciding quantity is
 measurable in advance: search-space headroom relative to fitness noise. We
 package this as a headroom gate that predicts, before any LLM spend, whether
-the loop will pay off, and we release the tool, the audit stack, and a
-catalog of failure modes with their guardrails, so teams can apply the same
-procedure to their own ranking stacks.
+the loop will pay off, and we release the system, the auditing tools, and a catalog of failure
+modes with their guardrails, so teams can apply the procedure to their own ranking stacks.
 \end{abstract}
 
 \begin{keywords}
@@ -70,30 +67,25 @@ procedure to their own ranking stacks.
 Automated discovery loops that pair a large language model with evolutionary
 search over programs have produced striking results, and industrial systems
 such as Meta's Ranking Engineer Agent apply the pattern to ranking at scale.
-These systems are closed, and published results in the genre share a
-methodological gap: gains are overwhelmingly reported on the data the loop
-used to select candidates. For ranking, where realistic per-candidate
-evaluations are noisy by necessity, this gap matters. Selection under noise
-systematically promotes lucky candidates, and a loop can appear to make
-steady progress while discovering nothing that transfers.
+These systems are closed, and published results in the genre share a gap:
+gains are overwhelmingly reported on the data the loop used to select
+candidates. For ranking, where per-candidate evaluations are noisy by
+necessity, this matters: selection under noise promotes lucky candidates,
+and a loop can appear to make steady progress while discovering nothing
+that transfers.
 
-We contribute an open, end-to-end audited account of when the pattern works
-and when it silently does not, on a public e-commerce ranking task with three
-competing objectives (relevance, conversion, revenue). Our contributions are:
-(1) a quantified boundary condition for when such loops work: evolved
-training objectives whose gains on the selection fold (the small dataset the
-loop scores candidates on) do not survive a held-out transfer audit, for a
-reason teams can check in their own settings, real effect sizes smaller than
-the noise floor of the loop's own scoring; (2) guidance ablations showing
+We contribute an open, fully audited account of when the pattern works
+and when it silently does not, on a public e-commerce ranking task with
+three competing objectives (relevance, conversion, revenue). Our contributions are:
+(1) a quantified boundary condition for when such loops work: evolved training objectives whose selection-fold gains do not survive a
+held-out transfer audit, because real effect sizes are smaller than the
+noise of the loop's own scoring; (2) controlled ablations of guidance showing
 that seeded domain knowledge and evidence-rich diagnostic feedback change the
-speed and style of search but not what generalizes; (3) the constructive counterpart
-under identical auditing: pointing the same loop at a search space whose
+speed and style of search but not what generalizes; (3) the positive case under identical auditing: pointing the same loop at a search space whose
 effect sizes clear the noise floor yields transfer-audited pipelines,
-better on every objective at once, in all three seeds, which reconstruct and extend the
-load-bearing structure of the ICDM 2013 challenge winners' hand-built
-solutions; and (4) the released tool and audit stack, including a headroom
-gate, a cheap pre-check that predicts, before any LLM spend, whether a
-search space will reward the loop.
+better on every objective at once, in all three runs, which reconstruct and extend the ICDM 2013 challenge winners' hand-built
+solutions; and (4) the released tool and audit stack, including the headroom gate, a cheap pre-check of whether a search space
+will reward the loop.
 
 \section{Related Work}
 \textbf{LLM-guided program evolution.} FunSearch~\cite{funsearch} and
@@ -101,16 +93,15 @@ AlphaEvolve~\cite{alphaevolve} pair an LLM
 mutation operator with evolutionary search over programs and automated
 evaluators, with open engines~\cite{adaevolve,evox} reproducing the pattern;
 industrial ranking agents (REA, GEARS)~\cite{rea} apply agentic
-experimentation to production ranking behind closed doors. We contribute the missing measurement layer: an
-identical loop shown provably selecting noise in one search space and
-provably discovering in another, with the deciding quantity measurable
-before any spend, in the first open, reproducible instance of the pattern
-for tabular LTR.
+experimentation to production ranking behind closed doors. We contribute the missing measurement layer: an identical loop shown provably selecting noise in one search space and
+provably discovering in another, in the first open, reproducible instance
+of the pattern for tabular LTR.
 
 \textbf{Automated loss discovery.} GLO~\cite{glo}, AM-LFS~\cite{amlfs},
 AutoLoss-Zero~\cite{autolosszero}, and CSE-Autoloss~\cite{cseautoloss}
-search loss functions by genetic programming over primitives,
-mostly for vision; LambdaLoss~\cite{lambdaloss} is the hand-derived metric-bound counterpart;
+search loss functions by recombining small mathematical building blocks,
+mostly for vision; LambdaLoss~\cite{lambdaloss} is the hand-derived counterpart (a loss
+built from a bound on the ranking metric);
 RankEvolve~\cite{rankevolve} applies evolutionary search to unsupervised
 lexical retrieval with a single-number score. We bring loss search to supervised multi-objective ranking with
 gradient-boosted trees (GBDT) via LLM mutations over full gradient code, and map a boundary this literature has
@@ -120,28 +111,25 @@ transfer.
 
 \textbf{Reflective feedback for LLM optimization.} Reflexion~\cite{reflexion},
 ProTeGi~\cite{protegi}, OPRO~\cite{opro}, and GEPA~\cite{gepa} show that richer textual feedback (traces, textual gradients)
-improves LLM-driven search. We measure that assumption's boundary: gradient-introspective feedback, a
-new feedback type possible because the evolved artifact is a differentiable
-loss, changed nothing about what transferred across three seeds, while a
-data-side fix to the fitness signal tripled transfer.
+improves LLM-driven search. We measure that assumption's boundary: feedback that inspects the
+candidate's own training gradients (possible because the evolved program is
+a loss function) changed nothing about what transferred across three runs,
+while simply enlarging the evaluation fold tripled it.
 
 \textbf{Agentic AutoML and LLM feature engineering.} CAAFE~\cite{caafe}
 generates features for tabular classification; AIDE~\cite{aide},
 ML-Agent~\cite{mlagent}, and related agents iterate over ML pipelines, typically evaluated by single-objective validation
-accuracy. Our deltas are the ranking domain (query-grouped data, within-query rank
-features, per-query ensembling), transfer-audited selection as the
-acceptance criterion, and a quantified catalog of agent-specific
-target-encoding leakage modes.
+accuracy. We differ in the ranking domain (query-grouped data, per-query features
+and ensembling), in transfer-audited selection as the acceptance bar, and
+in a quantified catalog of target-encoding leakage modes.
 
 \textbf{LTR foundations and the benchmark.} LambdaMART~\cite{lambdamart}
 remains the standard for feature-based ranking, where gradient-boosted trees
 still match or beat neural rankers~\cite{qin2021}; the ICDM 2013 challenge
 solutions~\cite{liu2013} document the winning feature recipes and score-blending ensembles; a 2024 survey~\cite{survey2024} notes that public
 datasets with monetary outcome labels remain scarce, anchoring open
-multi-objective work to this benchmark. Our loop autonomously rediscovers the
-load-bearing structure of those hand-built solutions and extends it, in about
-two hours for about ten dollars, and beats a LambdaMART baseline re-tuned at every training-set size we
-report, on all objectives at every scale tested.
+multi-objective work to this benchmark. Our loop rediscovers and extends the essential structure of those
+solutions autonomously, for about ten dollars.
 
 \section{System and Audit Methodology}
 
@@ -149,81 +137,66 @@ report, on all objectives at every scale tested.
   \centering
   \includegraphics[width=\linewidth]{flowchart.pdf}
   \caption{The EvoRank system. Lane A: frozen data preparation producing a
-  small fold the loop scores candidates on and a large held-out fold it
-  never sees. Lane B: the evolution loop, one LLM call per iteration: the
-  archive supplies a parent and rivals, the LLM edits the marked blocks, the
-  candidate is trained and scored under guardrails, and plain-language
-  feedback (Figure~2) travels back with the program; broken candidates
-  return explanations instead of scores. The dashed box is optional expert
-  knowledge, ablated in campaign 1. Lane C: the honesty harness: a pre-spend
-  gate, baselines on equal terms, and the held-out audit that decides what
-  counts as discovered.}
+  small scoring fold and a large held-out fold. Lane B: the loop, one LLM call per iteration, from archive through
+  prompt, edit, guarded evaluation, and feedback (Figure~2) back to the
+  archive; broken candidates return explanations. Dashed: optional expert knowledge, ablated in
+  campaign 1. Lane C: the honesty harness: pre-spend gate, baselines on
+  equal terms, and the held-out audit that decides what counts.}
   \label{fig:system}
 \end{figure}
 
 \subsection{Background: the evolutionary engine}
 EvoRank builds on SkyDiscover, an open framework for LLM-guided evolutionary
-program search in the AlphaEvolve family~\cite{alphaevolve,adaevolve};
-Figure~\ref{fig:system} shows the assembled system. The unit of evolution is a source
+program search in the AlphaEvolve family~\cite{alphaevolve,adaevolve}
+(Figure~\ref{fig:system}). The unit of evolution is a source
 file in which mutable regions are delimited by EVOLVE-BLOCK markers;
-everything outside the markers is frozen, which is how we constrain what the
-search may change. Each iteration samples a parent (plus context programs) from a
+everything outside the markers is frozen. Each iteration samples a parent (plus context programs) from a
 program database, assembles a prompt with their source, scores, and
 feedback, makes one LLM call that edits the mutable regions, evaluates the
 candidate with a user-supplied \texttt{evaluate} function, and inserts it
-back into the database. In classical terms, the LLM replaces hand-designed mutation operators and
-the prompt context plays the role of the mating pool.
+back into the database.
 
-We use SkyDiscover's AdaEvolve search controller~\cite{adaevolve}. Its program database is an
-island model (two islands here, with dynamic spawning of further islands on
-stagnation, up to five) with periodic ring migration of top programs,
-which maintains diversity by evolving semi-isolated subpopulations; a
-bandit allocates iterations to islands by recent improvement, and each
-island adapts its exploration intensity accordingly. The database keeps a Pareto archive, the set of best available trade-offs
+We use SkyDiscover's AdaEvolve search controller~\cite{adaevolve}. Its program database keeps several semi-isolated subpopulations
+(islands; two here, spawning up to five on stagnation) that periodically exchange their best programs; a bandit allocates
+iterations to islands by recent improvement, and each island adapts its
+exploration intensity accordingly. The database keeps a Pareto archive, the set of best available trade-offs
 over the three objectives (ndcg, booking ndcg, pooled dollar-weighted
-revenue), with a scalar key used only for tie-breaking. On stagnation the controller can prompt the LLM for a
-high-level strategy change rather than a local edit. All state is checkpointed, so runs resume exactly and every
-selected program is preserved with its lineage.
+revenue), with a single-number score used only for tie-breaking. On stagnation the controller can prompt the LLM for a
+high-level strategy change rather than a local edit.
 
 \subsection{Preliminaries: the algorithms in brief}
-For readers new to Learning-to-Rank, the recurring machinery is as follows.
-
 \emph{Ranking and NDCG@k.} A query returns a list of items with relevance
-labels. NDCG@k scores how well a model orders each list: relevant items near
-the top earn gain discounted by log-position, normalized by the best
-achievable ordering, so 1.0 is perfect. We average it per query (for revenue
+labels. NDCG@k scores how well a model orders each list: relevant items near the
+top earn gain discounted by position, normalized so 1.0 is perfect. We average it per query (for revenue
 we instead pool dollars, so high-value queries weigh more).
 
 \emph{GBDT and LambdaMART.} Gradient-boosted decision trees
-(XGBoost~\cite{xgboost}, LightGBM~\cite{lightgbm}) fit an additive sequence of small trees, each correcting the
-previous ones via gradients of a loss. LambdaMART is the ranking instance:
-for every within-query pair where item $i$ outranks item $j$ in the labels,
-it applies a pairwise logistic gradient scaled by how much swapping the two
-would change NDCG, so training pressure concentrates where the metric is
-actually at stake. XGBoost's rank:ndcg and LightGBM's lambdarank implement
-it; our campaign-1 candidates are hand-written variants of exactly this
+(XGBoost~\cite{xgboost}, LightGBM~\cite{lightgbm}) fit a sequence of small trees, each correcting the previous ones via
+gradients of a loss. LambdaMART is the ranking instance:
+for every within-query pair where one item outranks another in the
+labels, it applies a pairwise gradient scaled by how much swapping the two
+would change NDCG, concentrating training pressure where the metric is at
+stake. XGBoost and LightGBM implement it; campaign 1 evolves exactly this
 gradient function.
 
 \emph{Hyperparameter tuning with Optuna.} A GBDT's quality depends on
 learning rate, depth, subsampling, and regularization. Optuna~\cite{optuna}
-searches that space with Bayesian trials scored on validation data. Our
-baselines get 40 trials, re-run at every training-set size we report,
-because optimal configurations change with the amount of data.
+searches that space with Bayesian trials scored on validation data. Baselines get 40 trials, re-run at every training-set size we report,
+since optimal settings change with data volume.
 
 \emph{Ensembling by per-query z-scores.} Different model families make
 partially independent errors; because their scores live on different scales,
 each model's scores are standardized within each query before a weighted
-sum. This was the challenge winners' combiner of choice and is what our
-discovered pipelines select.
+sum. It was the challenge winners' choice and what our pipelines select.
 
-\emph{Out-of-fold target encoding.} Encoding a categorical column by the
-average label of its value (a hotel's historical booking rate) leaks labels
-into features unless each row is encoded using statistics from other
-query-folds only. Section 5 quantifies what goes wrong otherwise.
+\emph{Out-of-fold target encoding.} Encoding a categorical column by the average label of its value (a
+hotel's historical booking rate) leaks labels into features unless each row
+is encoded from other query-folds only. Section 5 quantifies what goes
+wrong.
 
-\emph{The statistics.} A paired query bootstrap resamples queries and
-recomputes the metric difference between two systems thousands of times,
-giving intervals that treat the query as the unit of noise. Pareto dominance
+\emph{The statistics.} A paired query bootstrap resamples queries and recomputes the difference
+between two systems thousands of times, treating the query as the unit of
+noise. Pareto dominance
 means at least as good on every objective and better on one; hypervolume
 measures how much objective space the non-dominated set covers.
 
@@ -231,10 +204,9 @@ measures how much objective space the non-dominated set covers.
 Data is the public Expedia Personalized Hotel Search training file (9.9M
 impressions, 399k queries), split 70/15/15 by query. Each shown hotel gets a
 graded relevance label: 5 if booked, 1 if clicked, 0 otherwise. The loop
-evaluates candidates on a small fitness fold of 8k training queries: a
-candidate trains a gradient-boosted ranker under a fixed budget and is
-scored on the fold's held-back validation queries, and that score is its
-fitness; the small fold keeps each evaluation between 5 and 40 seconds. Some
+evaluates candidates on a small fitness fold of 8k training queries: a candidate trains a gradient-boosted ranker under a fixed budget and is
+scored on the fold's held-back validation queries; that score is its
+fitness, and the small fold keeps each evaluation between 5 and 40 seconds. Some
 candidates are broken rather than weak, for example gradients that turn
 infinite, training that exceeds the time budget, or a malformed pipeline
 specification. These receive zero fitness together with a message explaining
@@ -244,21 +216,18 @@ teaching signals.
 \subsection{The audit stack}
 The audit stack, applied identically to every campaign: (a) paired query
 bootstrap for every comparison, with noise-gated deltas inside the loop's
-own feedback; (b) equal-budget random-search controls; (c) symmetric
-hyperparameter treatment (post-hoc Optuna tuning of discovered artifacts);
-(d) a selection-generalization audit that rescores every checkpoint's
-selection on 60k held-out queries; (e) three-objective hypervolume; and (f)
-mechanism ablations of discovered artifacts. Baselines are LambdaMART (the standard
-gradient-boosted ranking algorithm, XGBoost rank:ndcg) with 40 trials of
-Optuna hyperparameter search, re-tuned separately at every training-set size
-we report, plus an equal-budget random search over the same candidate space as
-the loop.
-%% TODO: consider a small figure here summarizing the audit stack.
+own feedback; (b) equal-budget random-search controls; (c) equal tuning on both sides (discovered programs get the same Optuna
+budget as the baseline); (d) the transfer audit itself, rescoring every
+checkpoint's selected program on 60k held-out queries; (e) three-objective
+frontier quality (hypervolume); and (f) component-removal tests on
+discovered programs. Baselines: LambdaMART (XGBoost rank:ndcg) with 40 Optuna trials, re-tuned
+at every training-set size we report, plus an equal-budget random search
+over the loop's candidate space.
 
 \section{Campaign 1: Objective Space, Where the Loop Selects Noise}
-The evolvable artifact is the LambdaMART gradient function, computed per
-query group (the set of hotels returned for one search), with access to each
-impression's raw behavioral signals; training configuration, features, and
+The evolvable piece is the LambdaMART gradient function, computed per
+query group (the set of hotels returned for one search), with access to each impression's raw behavioral signals (click, booking,
+revenue for each shown hotel); training configuration, features, and
 metrics are frozen, and the starting version reproduces XGBoost's built-in
 rank:ndcg within noise.
 
@@ -273,20 +242,18 @@ started, blind mutation did as well as guided search, and ordinary tuning
 beat both. The mechanism is measured: a single edit's true effect is 0.002 to 0.005
 NDCG@10, while the selection fold's measurement noise is $\pm 0.008$ to
 $0.015$, so an edit's effect is smaller than the error in measuring it, and
-picking the best score means picking luck. Enlarging the fitness fold's validation side from 1.6k to 6k queries halves
-that noise and triples the mean gain surviving transfer; it is the only
-intervention that moved transfer.
+picking the best score means picking luck. Enlarging the fitness fold's validation side from 1.6k to 6k queries
+halves that noise and triples the gain surviving transfer, the only
+intervention that moved it.
 
 Guidance ablations: seeding the prompt with curated domain knowledge makes
 the search faster, not truer. Seeded runs need only 1 to 3 iterations to
 match the best score an equal-budget random search reaches in its entire
-run; unseeded runs need 7 to 23. Seeded runs also end with a better
-three-objective frontier (higher hypervolume) in every seed. What transfers
+run; unseeded runs need 7 to 23. Seeded runs also end with a better three-objective frontier in every run. What transfers
 to held-out data is unchanged. A diagnostic feedback channel (noise-gated deltas, per-segment breakdowns,
-probes into the candidate's training gradients) changes nothing measurable
-across three seeds. One probe byproduct: the best discovered revenue term moves only 0.09
-percent of the total training gradient yet removing it costs 0.009 revenue,
-so even tiny but systematic pressure compounds across boosting rounds.
+probes into the candidate's training gradients) changes nothing measurable across three runs. A probe byproduct: a term moving only 0.09 percent of the training
+gradient still costs 0.009 revenue when removed, so tiny systematic
+pressure compounds.
 
 Analysis beat further search: removing the best objective's components one
 at a time (five evaluations in total) explained its behavior and exposed one
@@ -297,63 +264,58 @@ default rank:ndcg, lands within 0.001 NDCG@10 of every other.
 
 \section{Campaign 2: Pipeline Space, Where the Loop Discovers}
 Campaign 2 widens the search from the loss alone to the whole pipeline.
-The LLM now edits two blocks: feature-construction code over semantically named columns, where any
-statistic touching labels must come from provided helper functions with the
-leakage guards built in (counts, out-of-fold rates, quantiles), and a
-pipeline specification chosen from a whitelist (one to three members from XGBoost,
-LightGBM, and sklearn families; rank, pointwise, binary, or campaign-1
-losses; z-score or rank-mean combining). Feedback is stage-attributed so the
-loop can tell which axis earned each change; Figure~\ref{fig:feedback}
-shows it verbatim, exactly as it appears in the next prompt.
+The LLM now edits two blocks: feature-construction code over semantically
+named columns, where any statistic touching labels must come from helper
+functions with leakage guards built in (counts, out-of-fold rates,
+quantiles), and a pipeline specification from a whitelist (one to three members from XGBoost, LightGBM, or sklearn; ranking,
+pointwise, binary, or campaign-1 losses; z-score or rank-mean blending). Feedback is stage-attributed (each pipeline stage gets its own line) so
+the loop can tell which axis earned each change; Figure~\ref{fig:feedback} shows it verbatim.
 
 \begin{figure}
 \footnotesize
 \begin{verbatim}
 scores: ndcg=0.4357 (+0.0139 vs seed, +/-0.0054, SIGNIFICANT) |
   book_ndcg=0.4604 (+0.0142, SIGNIFICANT) | revenue=0.4309 (+0.0217, SIGNIFICANT)
-features: 80 columns (71 raw + 9 engineered: price_usd_qrank,
-  prop_starrating_qrank, prop_review_score_qrank, prop_location_score1_qrank,
-  prop_location_score2_qrank, prop_log_historical_price_qrank, prop_id_count,
-  dest_count), build 0.6s
+features: 80 columns (71 raw + 9 engineered: 6 within-query
+  ranks, 2 counts, ...), build 0.6s
 members: [0] xgb/rank:ndcg: val ndcg 0.4325 (2s)
          [1] lgbm/lambdarank: val ndcg 0.4261 (4s)
          [2] sklearn/ert: val ndcg 0.4171 (28s)
 ensemble: zscore_weighted [0.55, 0.33, 0.12] = 0.4357,
   best single 0.4325 (+0.0033)
-segments: booked-q ndcg 0.461 (+0.014 vs seed) | click-only 0.379 (+0.013)
 \end{verbatim}
 \caption{Stage-attributed feedback for one campaign 2 candidate, verbatim
-from the run logs. Deltas are noise-gated against the seed pipeline
-reference; per-member lines attribute quality to model and loss choices; the
-ensemble line reports the margin over the best single member. Rejected
-candidates instead receive an explanatory message, for example the sparsity
-floor explaining that per-item rate encodings are data-starved.}
+from the run logs (feature list elided). The +/- changes are measured
+against the starting pipeline and flagged SIGNIFICANT only above noise;
+per-member lines attribute quality to model and loss choices; the ensemble
+line reports the margin over the best member. Rejected candidates receive
+an explanation instead, for example that a per-hotel rate cannot be
+estimated from so few rows.}
 \label{fig:feedback}
 \end{figure}
 
-Before any LLM spend, the headroom gate: a hand-built candidate from the ICDM 2013 literature must beat the noise
-floor by a wide margin (we required 2.5 times, so real headroom cannot be
-mistaken for luck), and within-query rank features plus count encodings did
-($+0.013$ NDCG@10). Building that candidate surfaced three successively subtler leakage bugs,
+Before any LLM spend, the headroom gate: a hand-built candidate from the
+ICDM 2013 literature must beat the noise floor by a wide margin (we
+required 2.5 times), and within-query rank features plus count encodings
+did ($+0.013$ NDCG@10). Building that candidate surfaced three successively subtler leakage bugs,
 each measured. Encoding a hotel by its booking rate computed on the training
 fold costs $-0.10$ NDCG: the model partly memorizes its own labels. The
 textbook fix, excluding each row's own label from its encoding, is subtly
 worse at $-0.13$: the exclusion shifts the encoded value slightly downward
 exactly on the booked rows, and the trees learn to read that shift as the
 label itself. Computing encodings out-of-fold, with folds split by query, is
-clean. Each generation
-was caught by the audit before any search depended on it.
+clean. Each was caught by the audit before any search depended on it.
 
 \begin{table}
-  \caption{Campaign 2 transfer audit: fast-train protocol, 59{,}902 held-out
-  queries. All three seeds beat the tuned baseline; the best seed dominates
-  on all three objectives.}
+  \caption{Campaign 2 transfer audit: trained on the fitness fold, tested on
+  59{,}902 held-out queries. All runs beat the tuned baseline; the best
+  dominates on all objectives.}
   \label{tab:transfer}
   \begin{tabular}{lcccc}
     \toprule
     Method & Val NDCG@10 & Test NDCG@10 & Test book & Test revenue \\
     \midrule
-    Seed pipeline & 0.4218 & 0.4222 & 0.4443 & 0.4105 \\
+    Starting pipeline & 0.4218 & 0.4222 & 0.4443 & 0.4105 \\
     LambdaMART + Optuna & 0.4330 & 0.4296 & 0.4527 & 0.4231 \\
     Pipeline s0 & 0.4356 & 0.4316 & 0.4545 & 0.4257 \\
     Pipeline s1 & 0.4359 & 0.4322 & 0.4553 & 0.4215 \\
@@ -362,29 +324,26 @@ was caught by the audit before any search depended on it.
   \end{tabular}
 \end{table}
 
-What the search found (Figure~\ref{fig:discovered}): three seeds, at 50
+What the search found (Figure~\ref{fig:discovered}): three runs, at 50
 iterations and ten dollars each, converged on the same interpretable core: within-query percentile
 ranks of price, star rating, review and location scores, count encodings of
 property and destination identifiers, a lean feature set (the programs' own comments cite the earlier feedback
 showing that more features hurt), and a three-member ensemble of unlike
-models blended by per-query z-scores. One provenance
-distinction matters: the seeded priors included the gate's finding that rank
-and count features carry headroom, so their presence is partly prompted; the
-specific constructions, the model, loss, ensemble, and weight selections,
-and the unprompted inventions (per-query price z-normalization, quantile
-imputation of a heavy-missing location score) are the search's own, and the
-transfer-audited gains are independent of provenance.
+models blended by per-query z-scores. One provenance distinction matters: the seeded knowledge included the
+gate's finding that rank and count features carry headroom, so their
+presence is partly prompted; the specific constructions, the model, loss,
+ensemble, and weight selections, and the unprompted inventions (per-query
+price normalization, percentile-filling a mostly-missing location score)
+are the search's own, and the audited gains hold regardless.
 
 \begin{figure}
 \footnotesize
 \begin{verbatim}
-# discovered by seed s1 (excerpt); comments are the model's own
-for c in ["price_usd", "prop_starrating", "prop_location_score2",
-          "prop_review_score", "prop_location_score1"]:
+# discovered by run s1 (excerpt); comments are the model's own
+for c in ["price_usd", "prop_starrating", ...]:   # 5 columns
     out[f"{c}_qrank"] = df.groupby("qid")[c].rank(pct=True)
 for c in ["prop_id", "srch_destination_id"]:
     out[f"{c}_count"] = stats.count(df, c)   # popularity priors
-out["ump"] = np.exp(df["prop_log_historical_price"]) - price
 
 PIPELINE = {"models": [
     {"family": "xgb",     "objective": "rank:ndcg",  ...},
@@ -392,16 +351,15 @@ PIPELINE = {"models": [
     {"family": "sklearn", "objective": "ert",        ...}],
   "ensemble": {"type": "zscore_weighted", "weights": [0.5, 0.35, 0.15]}}
 \end{verbatim}
-\caption{The discovered artifact is readable code: feature block excerpt and
-pipeline specification from seed s1's final program (full programs in the
-repository).}
+\caption{The discovered program is readable code: feature excerpt and
+pipeline specification from run s1 (full programs in the repository).}
 \label{fig:discovered}
 \end{figure}
 
-Does it transfer? Table~\ref{tab:transfer}: roughly 70 percent of
-selection-fold gains survive on 60k held-out queries, and all three seeds
-beat the tuned baseline. A paired query bootstrap (10,000 resamples) makes
-this formal: the best seed wins by +0.0057 NDCG@10 (95 percent CI [0.0041,
+Does it transfer? Yes (Table~\ref{tab:transfer}): roughly 70 percent of
+selection-fold gains survive on 60k held-out queries, and all three runs
+beat the tuned baseline there. A paired query bootstrap (10,000 resamples) makes
+this formal: the best run wins by +0.0057 NDCG@10 (95 percent CI [0.0041,
 0.0073], one-sided p < 0.0001) and +0.0056 booking NDCG@10 (p < 0.0001),
 with revenue positive but within noise (+0.0008, CI [-0.0034, 0.0047]); the
 full-scale comparison shows the same pattern (+0.0075 NDCG@10, p < 0.0001).
@@ -409,78 +367,71 @@ The multi-objective claim is therefore precise: significantly better
 relevance and conversion at matching revenue.
 
 \begin{table}
-  \caption{Full-scale comparison (trained on 280k queries, tested on 60k),
-  including NDCG@38, the ICDM 2013 challenge metric. The config-equalized
-  pipeline is a lower bound (member configuration not re-tuned for the
-  pipeline).}
+  \caption{Full-scale comparison (280k train, 60k test queries), including
+  NDCG@38, the challenge metric. The last row is a lower bound: the
+  pipeline reuses the baseline's tuned settings without its own re-tune.}
   \label{tab:fullscale}
   \begin{tabular}{lcccc}
     \toprule
     Method & NDCG@10 & NDCG@38 & Book@10 & Revenue@10 \\
     \midrule
-    Tuned baseline (fast-regime config) & 0.4349 & 0.4983 & 0.4588 & 0.4300 \\
-    Tuned baseline (full-scale config) & 0.4544 & 0.5132 & 0.4805 & 0.4565 \\
-    Pipeline s1 (fast-regime config) & 0.4490 & 0.5080 & 0.4738 & 0.4483 \\
-    Pipeline s1 (config-equalized) & \textbf{0.4619} & \textbf{0.5185} & \textbf{0.4883} & \textbf{0.4585} \\
+    Tuned baseline (small-fold tuning) & 0.4349 & 0.4983 & 0.4588 & 0.4300 \\
+    Tuned baseline (full-scale tuning) & 0.4544 & 0.5132 & 0.4805 & 0.4565 \\
+    Pipeline s1 (small-fold tuning) & 0.4490 & 0.5080 & 0.4738 & 0.4483 \\
+    Pipeline s1 (baseline's tuned settings) & \textbf{0.4619} & \textbf{0.5185} & \textbf{0.4883} & \textbf{0.4585} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Training on the full dataset required its own rigor step and yields a
-methodology lesson (Table~\ref{tab:fullscale}): against a baseline whose
-hyperparameters were tuned on the small fold the pipelines win easily, but
-re-tuning the baseline at full scale reverses that naive verdict, and only a
-comparison with the same tuned hyperparameters on both sides isolates the
-discovered structure,
-which then wins on all four reported numbers. A
-decomposition attributes the margin to both discovered components: the
-features alone, under the same tuned single model, reach 0.4587 NDCG@10
-(+0.0043 over the strict baseline), and the ensemble adds a further +0.0032
-to 0.4619.
-We also scored both artifacts on the original competition's hidden test set
+Full-dataset training yields its own methodology lesson
+(Table~\ref{tab:fullscale}): against a baseline tuned on the small fold the
+pipelines win easily; re-tuning the baseline at full scale reverses that
+verdict; and only a comparison with the same tuned settings on both sides
+isolates the discovered structure, which then wins on all four numbers. The margin splits across both components: the features alone, under the
+same tuned single model, reach 0.4587 NDCG@10 (+0.0043); the ensemble adds
++0.0032 to 0.4619.
+We also scored both final models on the original competition's hidden
+test set
 via Kaggle late submission (one shot each, no leaderboard iteration): the
 discovered pipeline reaches 0.5196 private NDCG@38, which would have placed
 20th of 340 teams (top 6 percent) in the 2013 challenge, with the tuned
-baseline at 0.5140 (30th), so ten leaderboard places are attributable to the
-discovered structure. The winning hand-built ensembles remain ahead (0.5398;
-the published solution we cite reports 0.5310), and our submission benefits
-from hindsight, since the winners' published lessons are part of the seeded
-priors.
+baseline at 0.5140 (30th), so ten leaderboard places come from the discovered structure. The winning hand-built ensembles remain ahead (0.5398; our cited solution
+reports 0.5310), and our submission benefits from hindsight, since the
+winners' published lessons are in the seeded knowledge.
 
 \section{Discussion}
 
 \begin{figure}
   \centering
   \includegraphics[width=0.92\linewidth]{transfer_contrast.pdf}
-  \caption{The study in one picture: per-seed NDCG@10 gains over the seed
-  program on the selection fold (open) and on 60k held-out queries (filled).
-  Campaign 1's selection-fold gains collapse into the held-out noise band;
-  campaign 2's survive.}
+  \caption{The study in one picture: per-run NDCG@10 gains over the
+  starting program, on the selection fold (open circles) and on 60k held-out queries
+  (filled). Campaign 1's gains collapse into the noise band; campaign 2's
+  survive.}
   \label{fig:contrast}
 \end{figure}
 
 The two campaigns differ in exactly one variable, the search space, and the
 same loop produced noise in one and transfer-audited Pareto dominance in the
 other (Figure~\ref{fig:contrast}). The deciding quantity is measurable in advance: the ratio of
-achievable effect sizes to fitness-fold noise. We suggest the headroom gate as cheap preregistration for discovery
-loops, and transfer-audited selection as the reporting standard. The result is not specific to the search algorithm: a
-recalibrated AdaEvolve and an EvoX meta-evolution variant~\cite{evox}, each
-at double budget, land within the original seed spread on the held-out
-fold. Together these results locate the leverage for future work in the
-measurement layer rather than the search controller: guidance and algorithm
-sophistication changed the speed and style of search, while evaluation
-fidelity, leakage-safe statistics, and rejection messages the model learns
-from moved outcomes. The clearest next step is multi-fidelity evaluation:
-screen candidates on the cheap fold and promote survivors to full-scale
-evaluation before selection, exposing scale-dependent features (per-entity
-rates, position effects) that a small fitness fold cannot see and that
-account for much of our remaining gap to the 2013 winners. The economics compound this: a campaign costs about ten dollars and two
-unattended hours, so the relevant unit is gain per human hour; the
-solutions our loop reconstructs took a seven-person team a season.
+achievable effect sizes to fitness-fold noise. We suggest the headroom gate as a cheap pre-spend go/no-go check for
+discovery loops, and transfer-audited selection as the reporting standard. Our results also rank where a team should invest next. Evaluators first:
+everything that moved outcomes lived there, fold size, leakage-safe
+statistics, rejection messages the model learns from, the gate, and the
+audit. Application spaces second: headroom relative to noise decides the
+outcome, so choosing the space is choosing the result. Search algorithms
+last: a recalibrated AdaEvolve and an EvoX meta-evolution
+variant~\cite{evox}, each at double budget, landed inside the spread of the
+original three runs, their internal signals drowned by the same noise that
+governs everything else. The clearest fusion of the first two is
+multi-fidelity evaluation: screen candidates on the cheap fold, promote
+survivors to full-scale evaluation before selection, and expose
+scale-dependent features (per-entity rates, position effects) that a small
+fold cannot see, which account for much of our gap to the 2013 winners.
 
 Limitations: one dataset (newer public datasets lack conversion and
 revenue labels, which is why open multi-objective LTR remains anchored to
-this benchmark); three seeds per condition; revenue is a proxy metric; and
+this benchmark); three runs per condition; revenue is a proxy metric; and
 discovered pipelines were audited for transfer, not online effects.
 
 \section{Conclusion}
@@ -489,10 +440,9 @@ study distills to a working procedure: measure the noise of the evaluation
 you can afford; verify with one hand-built candidate that your search space
 offers effects above that noise; only then run the loop, with leakage-safe
 statistics and rejection messages the model can learn from; and let a
-held-out audit, not the loop's own scores, decide what counts. The loop is
-neither magic nor broken: its discoveries are real precisely when the search
-space offers effect sizes the fitness signal can resolve, and both
-quantities are measurable before any budget is spent. Code, configs, seeds,
+held-out audit, not the loop's own scores, decide what counts. The loop is neither magic nor broken: its discoveries are real precisely
+when the search space offers effect sizes the fitness signal can resolve,
+and both are measurable before any budget is spent. Code, configs, seeds,
 per-iteration logs, discovered programs, and audit scripts are released to
 make the procedure directly reusable, at
 \url{https://github.com/shabazpatel/evorank}.

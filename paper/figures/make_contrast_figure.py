@@ -34,7 +34,7 @@ ax.plot([], [], "o", color=ACCENT, label="gain on 60k held-out queries")
 ax.plot([], [], "s", color="#dddddd", ms=10, label="held-out noise band")
 ax.legend(loc="upper left", frameon=False, fontsize=9)
 
-ax.set_ylabel("NDCG@10 gain vs seed program", fontsize=10)
+ax.set_ylabel("NDCG@10 gain vs starting program", fontsize=10)
 ax.set_xlim(-0.35, 2.15)
 ax.set_ylim(-0.0075, 0.020)
 ax.set_xticks([])

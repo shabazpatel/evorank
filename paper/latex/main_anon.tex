@@ -25,17 +25,14 @@ for double-blind review and will appear in the camera-ready version.}
 
 \begin{abstract}
 We present EvoRank, an open autonomous ranking engineer: an LLM-guided
-evolutionary loop that discovers complete Learning-to-Rank pipelines, feature
-construction, model selection, loss selection, and ensemble architecture, for
-multi-objective e-commerce search. On the Expedia ICDM 2013 dataset, with
-relevance, conversion, and revenue as competing objectives, three independent
-EvoRank seeds each converge within 50 iterations (about ten dollars of LLM
-spend) on interpretable pipelines that beat an Optuna-tuned LambdaMART on
-60k held-out queries, significantly on relevance and conversion and matching
-on revenue, an advantage that
-persists when training on the full 6.9M-impression dataset with the same
-tuned settings on both sides. The discovered pipelines reconstruct and extend the
-load-bearing structure of the challenge winners' hand-built solutions. A first campaign of the same
+evolutionary loop that discovers complete Learning-to-Rank pipelines
+(features, models, losses, ensembles) for multi-objective e-commerce
+search. On the Expedia ICDM 2013 dataset, with
+relevance, conversion, and revenue as competing objectives, three seeds each
+converge within 50 iterations (about ten dollars) on interpretable pipelines
+that beat an Optuna-tuned LambdaMART on 60k held-out queries, an advantage
+that persists at full data scale and would have placed in the top 6 percent
+of the original competition via one-shot late submission. A first campaign of the same
 loop, evolving only training objectives, supplies the study's central design
 rule: it appeared to work on its selection fold while a transfer audit
 showed the gains were almost entirely fitness noise (the run-to-run
@@ -241,8 +238,8 @@ The audit stack, applied identically to every campaign, is the methodological
 core: (a) paired query bootstrap for every comparison, with noise-gated
 deltas inside the loop's own feedback; (b) equal-budget random-search
 controls; (c) symmetric hyperparameter treatment (post-hoc Optuna tuning of
-discovered artifacts at the baseline's budget); (d) a selection-
-generalization audit that rescores every checkpoint's selected program on 60k
+discovered artifacts at the baseline's budget); (d) a
+selection-generalization audit that rescores every checkpoint's selected program on 60k
 held-out queries; (e) three-objective hypervolume; and (f) mechanism
 ablations of discovered artifacts. Baselines are LambdaMART (the standard
 gradient-boosted ranking algorithm, XGBoost rank:ndcg) with 40 trials of
@@ -495,11 +492,11 @@ Automated Feature Engineering. NeurIPS, 2023.
 Exploration in the Space of Code. arXiv:2502.13138, 2025.
 \bibitem{mlagent} Z. Liu, J. Chai, X. Zhu, et al. ML-Agent: Reinforcing LLM
 Agents for Autonomous Machine Learning Engineering. arXiv:2505.23723, 2025.
-\bibitem{qin2021} Z. Qin, L. Yan, H. Zhuang, et al. Are Neural Rankers
-Still Outperformed by Gradient Boosted Decision Trees? ICLR, 2021.
 \bibitem{lambdamart} C. J. C. Burges. From RankNet to LambdaRank to
 LambdaMART: An overview. Microsoft Research Technical Report MSR-TR-2010-82,
 2010.
+\bibitem{qin2021} Z. Qin, L. Yan, H. Zhuang, et al. Are Neural Rankers
+Still Outperformed by Gradient Boosted Decision Trees? ICLR, 2021.
 \bibitem{liu2013} X. Liu, B. Xu, Y. Zhang, et al. Combination of Diverse
 Ranking Models for Personalized Expedia Hotel Searches. arXiv:1311.7679,
 2013.

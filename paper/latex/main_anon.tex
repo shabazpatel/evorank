@@ -98,9 +98,9 @@ industrial ranking agents (REA, GEARS)~\cite{rea} apply agentic
 experimentation to production ranking behind closed doors. Results in this genre are overwhelmingly reported on the
 fold the loop selected on. We contribute the missing measurement layer: an
 identical loop shown provably selecting noise in one search space and
-provably discovering in another, with the deciding quantity (headroom versus
-fitness noise) measurable before any spend, in the first open, reproducible
-instance of the pattern for tabular LTR.
+provably discovering in another, with the deciding quantity measurable
+before any spend, in the first open, reproducible instance of the pattern
+for tabular LTR.
 
 \textbf{Automated loss discovery.} GLO~\cite{glo}, AM-LFS~\cite{amlfs},
 AutoLoss-Zero~\cite{autolosszero}, and CSE-Autoloss~\cite{cseautoloss}
@@ -169,25 +169,22 @@ prompt containing their source, scores, and evaluator feedback, make a single
 LLM call that proposes an edit to the mutable regions, evaluate the resulting
 candidate with a user-supplied \texttt{evaluate(program\_path)} function that
 returns a metric dictionary, and insert the scored candidate back into the
-database. For readers who know classical evolutionary computation: the LLM
-replaces hand-designed mutation and crossover operators, and the prompt
-context plays the role of the mating pool.
+database. In classical terms, the LLM replaces hand-designed mutation and crossover
+operators, and the prompt context plays the role of the mating pool.
 
 We use SkyDiscover's AdaEvolve search controller~\cite{adaevolve}. Its program database is an
 island model (two islands here, with dynamic spawning of further islands on
 stagnation, up to five) with periodic ring migration of top programs,
-which maintains diversity by evolving semi-isolated subpopulations. Island
-selection uses a UCB bandit over decayed improvement rewards, and each island
-adapts its exploration intensity from an accumulated improvement signal, so
-productive lineages are exploited while stagnating ones explore. In
+which maintains diversity by evolving semi-isolated subpopulations; a
+bandit allocates iterations to islands by recent improvement, and each
+island adapts its exploration intensity accordingly. In
 multi-objective mode the database keeps a Pareto archive: a candidate
 survives if no other program dominates it on all objectives (here ndcg,
 booking ndcg, and a pooled dollar-weighted revenue metric), with a scalar
 fitness key used only for tie-breaking and adaptive-state bookkeeping. On
 stagnation the controller can trigger a paradigm step that prompts the LLM
-for a high-level strategy change rather than a local edit. All state is
-checkpointed every five iterations, so runs resume exactly and every selected
-program is preserved with its lineage.
+for a high-level strategy change rather than a local edit. All state is checkpointed, so runs resume exactly and every
+selected program is preserved with its lineage.
 
 \subsection{Preliminaries: the algorithms in brief}
 For readers new to Learning-to-Rank, the recurring machinery is as follows.
@@ -239,10 +236,9 @@ booked, 1 clicked, 0 otherwise). A fast fitness fold (8k training queries; the l
 here, and that score is the candidate's fitness) keeps evaluation between 5
 and 40 seconds; each candidate trains a
 gradient-boosted ranker under a fixed budget and is scored on the fold's
-validation queries. Degenerate candidates (non-finite gradients or metrics,
-timeouts, malformed specifications) receive zero fitness with an explanatory
-message that flows back into the next prompt, so guardrails double as
-teaching signals.
+validation queries. Degenerate candidates (non-finite gradients, timeouts, malformed
+specifications) receive zero fitness with an explanatory message in the
+next prompt, so guardrails double as teaching signals.
 
 \subsection{The audit stack}
 The audit stack, applied identically to every campaign, is the methodological
@@ -261,9 +257,9 @@ the loop.
 
 \section{Campaign 1: Objective Space, a Measured Negative}
 The evolvable artifact is a group-aware LambdaMART gradient with access to
-raw behavioral signals (relevance grade, booking flag, booking revenue) per
-impression; training configuration, features, and metrics are frozen, and the
-seed reproduces XGBoost's built-in rank:ndcg within noise.
+the raw behavioral signals per impression; training configuration, features,
+and metrics are frozen, and the seed reproduces XGBoost's built-in rank:ndcg
+within noise.
 
 On the fold the loop selects on, evolved objectives beat the default baseline
 and improve steadily. The transfer audit reverses the picture: final selected
@@ -276,10 +272,10 @@ selection-fold noise floor of $\pm 0.008$ to $0.015$. Enlarging the fitness
 fold to 6k queries halves the noise and triples mean transferred gain, the
 only intervention that moved transfer.
 
-Guidance ablations: seeding the prompt with curated domain knowledge reaches
-the random-search-budget level on the selection fold in 1 to 3 iterations
-versus 7 to 23 without it, and wins three-objective hypervolume in every seed
-(mean 252 vs 230, $\times 10^{-6}$), with unchanged transfer. A diagnostic
+Guidance ablations: seeding the prompt with curated domain knowledge
+reaches the random-search-budget level on the selection fold in 1 to 3
+iterations versus 7 to 23 without it, and wins three-objective hypervolume
+in every seed, with unchanged transfer. A diagnostic
 feedback channel (noise-gated deltas, per-segment breakdowns, probes into
 the candidate's actual training gradients) changes nothing measurable across
 three seeds. One probe byproduct: the best discovered revenue term moves only 0.09
@@ -303,9 +299,8 @@ earned each change: a features line, per-member validation scores, the
 ensemble's margin over its best member, noise-gated metric deltas, and
 segment decompositions.
 
-Figure~\ref{fig:feedback} shows the feedback artifact verbatim; this
-string, attached to each candidate in the prompt, is what the search learns
-from.
+Figure~\ref{fig:feedback} shows this feedback verbatim; attached to each
+candidate in the prompt, it is what the search learns from.
 
 \begin{figure}
 \footnotesize
@@ -438,21 +433,19 @@ headroom and evaluation fidelity, not search sophistication, governing
 outcomes. Guidance (prompt knowledge, evidence-rich feedback)
 is a speed and interpretability lever, but in our measurements evaluator-side
 investment (larger fitness folds, leakage-safe statistics, stage-attributed
-rejection messages the model learns from) carried more of the outcome. The
-economics compound this: a full campaign costs about ten dollars and two
-unattended hours, so the relevant unit is gain per human hour, and the
-hand-built solutions whose structure our loop reconstructs took a
-seven-person team a competition season.
+rejection messages the model learns from) carried more of the outcome. The economics compound this: a campaign costs about ten dollars and two
+unattended hours, so the relevant unit is gain per human hour; the
+hand-built solutions our loop reconstructs took a seven-person team a
+competition season.
 
-Limitations: one dataset, though newer public datasets lack conversion and
-revenue labels, which is precisely why open multi-objective LTR remains
-anchored to this benchmark; three seeds per condition; NDCG@38 comparisons to
-the 2013 challenge are approximate by necessity; revenue is a proxy metric;
-and discovered pipelines were audited for transfer, not online effects.
+Limitations: one dataset (newer public datasets lack conversion and
+revenue labels, which is why open multi-objective LTR remains anchored to
+this benchmark); three seeds per condition; revenue is a proxy metric; and
+discovered pipelines were audited for transfer, not online effects.
 
 \section{Conclusion}
-Publishing an audited failure next to an audited success on the same task is,
-we believe, more useful than either alone. The loop is neither magic nor
+Publishing an audited failure next to an audited success on the same task
+is more useful than either alone. The loop is neither magic nor
 broken: it is a search procedure whose discoveries are real precisely when
 the search space offers effect sizes the fitness signal can resolve. Code,
 configs, seeds, per-iteration logs, discovered programs, and audit scripts

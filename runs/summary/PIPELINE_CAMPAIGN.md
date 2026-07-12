@@ -109,3 +109,20 @@ Verdicts (final):
    with data, and honesty requires reporting that regime too).
 3. Figures: Part 1 vs Part 2 transfer bars; convergence curves; discovered
    pipeline diagram; leakage-generations table.
+
+## Official Kaggle late-submission result (July 12)
+
+Both final artifacts, trained on the full 9.9M-row train.csv, scored by the
+original competition's grader on its hidden test set (one submission each,
+no leaderboard iteration):
+
+| submission | public NDCG@38 | private NDCG@38 | 2013 public rank |
+|---|---|---|---|
+| EvoRank pipeline (deepcfg) | 0.52109 | 0.51956 | 20 of 340 (top 6 percent) |
+| Optuna LambdaMART baseline | 0.51525 | 0.51404 | 30 of 340 |
+
+Ten leaderboard places separate baseline from pipeline: that gap is the
+discovered structure, confirmed in a third independent regime (our test
+fold, config-equalized full scale, and Kaggle's official test set). Winner
+0.53984 private; Liu et al. 0.53102. Caveat: hindsight, the winners'
+published lessons are in the seeded priors.

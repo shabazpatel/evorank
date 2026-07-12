@@ -71,8 +71,8 @@ box(0.015, 0.545, 0.220, 0.150, "Preparation",
     ["labels rel / booking / revenue", "71 numeric features",
      "70 / 15 / 15 split by query"])
 box(0.015, 0.330, 0.220, 0.150, "Two evaluation folds",
-    ["fitness fold: 8k train queries,", "5 to 40 s per candidate",
-     "held-out fold: 60k test queries"])
+    ["small fold for the loop", "(fast but noisy scores)",
+     "large held-out fold for the audit"])
 arrow(0.125, 0.760, 0.125, 0.697)
 arrow(0.125, 0.545, 0.125, 0.482)
 
@@ -80,20 +80,19 @@ arrow(0.125, 0.545, 0.125, 0.482)
 bw, bh = 0.205, 0.150
 x1, x2 = 0.315, 0.560
 ytop, ymid, ylow = 0.760, 0.545, 0.330
-box(x1, ytop, bw, bh, "Pareto program database",
-    ["archive over ndcg, booking", "ndcg, revenue; islands with", "migration; non-dominated kept"])
-box(x2, ytop, bw, bh, "Prompt builder",
-    ["parent + context programs", "with scores and", "stage-attributed feedback"])
-box(x2, ymid, bw, bh, "LLM mutation",
-    ["rewrites EVOLVE blocks only", "campaign 1: gradient objective",
-     "campaign 2: features + model /", "loss / ensemble spec"])
-box(x2, ylow, bw, bh, "Candidate evaluation",
-    ["guarded training: whitelists,", "clamps, wall budget, leakage-", "safe out-of-fold statistics"])
-box(x1, ymid, bw, bh, "Three-objective scoring",
-    ["ndcg | booking ndcg | revenue", "noise-gated deltas,", "per-member and ensemble lines"])
-box(x1, ylow, bw, bh, "Rejection as teaching",
-    ["degenerate candidates get zero", "fitness plus an explanatory",
-     "message in the next prompt"])
+box(x1, ytop, bw, bh, "Program archive",
+    ["keeps every program that is", "best at some trade-off of", "the three goals"])
+box(x2, ytop, bw, bh, "Build the next prompt",
+    ["one parent program + a few", "rivals, each shown with its", "scores and feedback"])
+box(x2, ymid, bw, bh, "LLM edits the program",
+    ["only the marked blocks change:", "campaign 1: the training loss",
+     "campaign 2: features + model +", "loss + ensemble choices"])
+box(x2, ylow, bw, bh, "Guarded evaluation",
+    ["train and score the candidate;", "whitelists, time budget,", "leakage-safe statistics"])
+box(x1, ymid, bw, bh, "Score + explain",
+    ["relevance, conversion, revenue;", "plain-language feedback on what", "helped and what did not (Fig. 2)"])
+box(x1, ylow, bw, bh, "Rejection teaches too",
+    ["broken candidates score zero", "and receive an explanation", "the LLM reads next time"])
 
 arrow(x1 + bw, ytop + bh / 2, x2, ytop + bh / 2)                     # db -> prompt
 arrow(x2 + bw / 2, ytop, x2 + bw / 2, ymid + bh)                     # prompt -> mutation
@@ -106,23 +105,23 @@ arrow(0.235, 0.340, x2 + bw / 2 - 0.02, 0.322, color=EDGE, lw=1.1, rad=0.22,
 
 # ----------------------------------------------------------------- guidance
 box(0.815, 0.760, 0.170, 0.150, "Seeded knowledge",
-    ["curated domain priors", "in the system prompt", "(ablated; campaign 1", "treatment)"],
+    ["expert ranking know-how", "in the system prompt", "(optional; ablated in", "campaign 1)"],
     edge=GUIDE_EDGE, fill=GUIDE_FILL, dashed=True)
 arrow(0.815, 0.835, x2 + bw + 0.004, 0.835, color=GUIDE_EDGE, dashed=True, lw=1.2)
 
 # ----------------------------------------------------------------- C: harness
 hw = 0.300
 box(0.015, 0.045, hw, 0.150, "1. Headroom gate (before spend)",
-    ["hand-built reference candidate must", "clear the fitness noise floor;",
-     "otherwise the loop selects luck"], edge=ACCENT, fill=ACCENT_FILL,
+    ["can a hand-built candidate beat the", "measurement noise? if not, the loop",
+     "would only select luck: do not run it"], edge=ACCENT, fill=ACCENT_FILL,
     title_color=ACCENT)
 box(0.345, 0.045, hw, 0.150, "2. Reference baselines",
-    ["LambdaMART default and Optuna-tuned", "(re-tuned per data regime),",
-     "LambdaLoss, equal-budget random search"], edge=ACCENT, fill=ACCENT_FILL,
+    ["tuned LambdaMART, LambdaLoss, and", "random search, given the same data",
+     "and the same candidate budget"], edge=ACCENT, fill=ACCENT_FILL,
     title_color=ACCENT)
 box(0.675, 0.045, hw, 0.150, "3. Transfer audit (after search)",
-    ["every selected program rescored on the", "60k-query held-out fold with paired",
-     "query bootstrap; only survivors count"], edge=ACCENT, fill=ACCENT_FILL,
+    ["winners re-scored on 60k queries the", "loop never saw; only gains that",
+     "survive there count as discoveries"], edge=ACCENT, fill=ACCENT_FILL,
     title_color=ACCENT)
 
 arrow(0.165, 0.195, 0.315, 0.300, color=ACCENT, rad=0.15,

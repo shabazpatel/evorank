@@ -337,8 +337,8 @@ was caught by the audit before any search depended on it.
   \end{tabular}
 \end{table}
 
-What the search found: three seeds, at 50 iterations and ten dollars each,
-converged on the same interpretable core: within-query percentile
+What the search found (Figure~\ref{fig:discovered}): three seeds, at 50
+iterations and ten dollars each, converged on the same interpretable core: within-query percentile
 ranks of price, star rating, review and location scores, count encodings of
 property and destination identifiers, a lean feature set whose comments
 cite the measured bloat evidence, and a diverse three-member ensemble under
@@ -349,6 +349,29 @@ specific constructions, the model, loss, ensemble, and weight selections,
 and the unprompted inventions (per-query price z-normalization, quantile
 imputation of a heavy-missing location score) are the search's own, and the
 transfer-audited gains are independent of provenance.
+
+\begin{figure}
+\footnotesize
+\begin{verbatim}
+# discovered by seed s1 (excerpt); comments are the model's own
+for c in ["price_usd", "prop_starrating", "prop_location_score2",
+          "prop_review_score", "prop_location_score1"]:
+    out[f"{c}_qrank"] = df.groupby("qid")[c].rank(pct=True)
+for c in ["prop_id", "srch_destination_id"]:
+    out[f"{c}_count"] = stats.count(df, c)   # popularity priors
+out["ump"] = np.exp(df["prop_log_historical_price"]) - price
+
+PIPELINE = {"models": [
+    {"family": "xgb",     "objective": "rank:ndcg",  ...},
+    {"family": "lgbm",    "objective": "lambdarank", ...},
+    {"family": "sklearn", "objective": "ert",        ...}],
+  "ensemble": {"type": "zscore_weighted", "weights": [0.5, 0.35, 0.15]}}
+\end{verbatim}
+\caption{The discovered artifact is readable code: feature block excerpt and
+pipeline specification from seed s1's final program (full programs released with
+the camera-ready).}
+\label{fig:discovered}
+\end{figure}
 
 Does it transfer? Table~\ref{tab:transfer}: roughly 70 percent of
 selection-fold gains survive on 60k held-out queries, and all three seeds

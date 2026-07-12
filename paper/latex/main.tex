@@ -297,9 +297,10 @@ default rank:ndcg, lands within 0.001 NDCG@10 of every other.
 
 \section{Campaign 2: Pipeline Space, Where the Loop Discovers}
 Campaign 2 widens the search from the loss alone to the whole pipeline.
-The LLM now edits two blocks: feature-construction code over semantically
-named columns, backed by a leakage-guarded statistics API, and a pipeline
-specification chosen from a whitelist (one to three members from XGBoost,
+The LLM now edits two blocks: feature-construction code over semantically named columns, where any
+statistic touching labels must come from provided helper functions with the
+leakage guards built in (counts, out-of-fold rates, quantiles), and a
+pipeline specification chosen from a whitelist (one to three members from XGBoost,
 LightGBM, and sklearn families; rank, pointwise, binary, or campaign-1
 losses; z-score or rank-mean combining). Feedback is stage-attributed so the
 loop can tell which axis earned each change; Figure~\ref{fig:feedback}

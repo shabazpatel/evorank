@@ -174,8 +174,8 @@ search may change. Each iteration samples a parent (plus context programs) from 
 program database, assembles a prompt with their source, scores, and
 feedback, makes one LLM call that edits the mutable regions, evaluates the
 candidate with a user-supplied \texttt{evaluate} function, and inserts it
-back into the database. In classical terms, the LLM replaces hand-designed mutation and crossover
-operators, and the prompt context plays the role of the mating pool.
+back into the database. In classical terms, the LLM replaces hand-designed mutation operators and
+the prompt context plays the role of the mating pool.
 
 We use SkyDiscover's AdaEvolve search controller~\cite{adaevolve}. Its program database is an
 island model (two islands here, with dynamic spawning of further islands on
@@ -355,11 +355,11 @@ was caught by the audit before any search depended on it.
 \end{table}
 
 What the search found: three seeds, 50 iterations and about ten dollars
-each, converged on the same interpretable core: five within-query percentile
-ranks (price, star rating, review score, location scores), count encodings
-of property and destination identifiers, a lean 20 to 30 column feature set
-whose program comments cite the measured bloat evidence, and a diverse
-three-member ensemble under per-query z-score weighting. One provenance
+each, converged on the same interpretable core: within-query percentile
+ranks of price, star rating, review and location scores, count encodings of
+property and destination identifiers, a lean 20 to 30 column feature set
+whose comments cite the measured bloat evidence, and a diverse three-member
+ensemble under per-query z-score weighting. One provenance
 distinction matters: the seeded priors included the gate's finding that rank
 and count features carry headroom, so their presence is partly prompted; the
 specific constructions, the model, loss, ensemble, and weight selections,

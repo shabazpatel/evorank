@@ -229,14 +229,17 @@ measures how much objective space the non-dominated set covers.
 
 \subsection{Task, data, and evaluators}
 Data is the public Expedia Personalized Hotel Search training file (9.9M
-impressions, 399k queries), split 70/15/15 by query; graded labels are 5
-booked, 1 clicked, 0 otherwise. A fast fitness fold (8k training queries; the loop scores every candidate
-here, and that score is the candidate's fitness) keeps evaluation between 5
-and 40 seconds; each candidate trains a
-gradient-boosted ranker under a fixed budget and is scored on the fold's
-validation queries. Degenerate candidates (non-finite gradients, timeouts, malformed
-specifications) receive zero fitness with an explanatory message in the
-next prompt, so guardrails double as teaching signals.
+impressions, 399k queries), split 70/15/15 by query. Each shown hotel gets a
+graded relevance label: 5 if booked, 1 if clicked, 0 otherwise. The loop
+evaluates candidates on a small fitness fold of 8k training queries: a
+candidate trains a gradient-boosted ranker under a fixed budget and is
+scored on the fold's held-back validation queries, and that score is its
+fitness; the small fold keeps each evaluation between 5 and 40 seconds. Some
+candidates are broken rather than weak, for example gradients that turn
+infinite, training that exceeds the time budget, or a malformed pipeline
+specification. These receive zero fitness together with a message explaining
+what went wrong, which enters the next prompt, so the guardrails double as
+teaching signals.
 
 \subsection{The audit stack}
 The audit stack, applied identically to every campaign: (a) paired query
@@ -253,10 +256,11 @@ the loop.
 %% TODO: consider a small figure here summarizing the audit stack.
 
 \section{Campaign 1: Objective Space, Where the Loop Selects Noise}
-The evolvable artifact is a group-aware LambdaMART gradient with access to
-the raw behavioral signals per impression; training configuration, features,
-and metrics are frozen, and the seed reproduces XGBoost's built-in rank:ndcg
-within noise.
+The evolvable artifact is the LambdaMART gradient function, computed per
+query group (the set of hotels returned for one search), with access to each
+impression's raw behavioral signals; training configuration, features, and
+metrics are frozen, and the starting version reproduces XGBoost's built-in
+rank:ndcg within noise.
 
 On its selection fold, evolved objectives beat the default baseline and
 improve steadily. The transfer audit reverses the picture: final selections
@@ -265,23 +269,27 @@ evolved objective beats its own seed by $+0.0002$ ($p=0.76$), an equal-budget
 random search transfers as well or better ($p=0.03$ in its favor), and every
 method is significantly below the tuned baseline ($p=0.0002$). The mechanism
 is measured: per-edit effect sizes of 0.002 to 0.005 against a
-selection-fold noise floor of $\pm 0.008$ to $0.015$. Enlarging the fitness fold to 6k queries halves the noise and triples mean
-transferred gain, the only intervention that moved it.
+selection-fold noise floor of $\pm 0.008$ to $0.015$. Enlarging the fitness fold's validation side from 1.6k to 6k queries halves
+that noise and triples the mean gain surviving transfer; it is the only
+intervention that moved transfer.
 
-Guidance ablations: seeding the prompt with curated domain knowledge
-reaches the random-search-budget level on the selection fold in 1 to 3
-iterations versus 7 to 23 without it, and wins three-objective hypervolume
-in every seed, with unchanged transfer. A diagnostic feedback channel (noise-gated deltas, per-segment breakdowns,
+Guidance ablations: seeding the prompt with curated domain knowledge makes
+the search faster, not truer. Seeded runs need only 1 to 3 iterations to
+match the best score an equal-budget random search reaches in its entire
+run; unseeded runs need 7 to 23. Seeded runs also end with a better
+three-objective frontier (higher hypervolume) in every seed. What transfers
+to held-out data is unchanged. A diagnostic feedback channel (noise-gated deltas, per-segment breakdowns,
 probes into the candidate's training gradients) changes nothing measurable
 across three seeds. One probe byproduct: the best discovered revenue term
 moves only 0.09 percent of gradient mass while removing it costs 0.009
 revenue, so small gradient biases compound across rounds.
 
-Mechanism ablation outperformed further search: knockouts attributed the
-best objective's behavior and revealed its per-query adaptive blending was
-harmful (a constant blend improved all three metrics), at the cost of five
-evaluations. Trained on the full dataset the family is a plateau: everything, including
-default rank:ndcg, lands within 0.001 NDCG@10 of everything else.
+Analysis beat further search: removing the best objective's components one
+at a time (five evaluations in total) explained its behavior and exposed one
+component, a blend weight that adapted per query, as actively harmful;
+fixing that weight to a constant improved all three metrics. The family also
+flattens at scale: trained on the full dataset, every objective, including
+default rank:ndcg, lands within 0.001 NDCG@10 of every other.
 
 \section{Campaign 2: Pipeline Space, Where the Loop Discovers}
 Campaign 2 widens the search from the loss alone to the whole pipeline.
@@ -320,12 +328,14 @@ floor explaining that per-item rate encodings are data-starved.}
 
 Before any LLM spend, the headroom gate: a hand-built candidate from the
 ICDM 2013 literature must clear 2.5 times the noise floor, and within-query
-rank features plus count encodings did ($+0.013$ NDCG@10). Building that
-candidate surfaced a three-generation leakage catalog worth reusing: naive
-train-fold target encoding costs $-0.10$ NDCG (the model memorizes its own
-labels); the textbook leave-one-out fix is subtly worse at $-0.13$, because
-subtracting the row's own label plants a per-row offset the trees read as a
-label detector; query-folded out-of-fold encoding is clean. Each generation
+rank features plus count encodings did ($+0.013$ NDCG@10). Building that candidate surfaced three successively subtler leakage bugs,
+each measured. Encoding a hotel by its booking rate computed on the training
+fold costs $-0.10$ NDCG: the model partly memorizes its own labels. The
+textbook fix, excluding each row's own label from its encoding, is subtly
+worse at $-0.13$: the exclusion shifts the encoded value slightly downward
+exactly on the booked rows, and the trees learn to read that shift as the
+label itself. Computing encodings out-of-fold, with folds split by query, is
+clean. Each generation
 was caught by the audit before any search depended on it.
 
 \begin{table}
@@ -349,9 +359,9 @@ was caught by the audit before any search depended on it.
 What the search found (Figure~\ref{fig:discovered}): three seeds, at 50
 iterations and ten dollars each, converged on the same interpretable core: within-query percentile
 ranks of price, star rating, review and location scores, count encodings of
-property and destination identifiers, a lean feature set whose comments
-cite the measured bloat evidence, and a diverse three-member ensemble under
-per-query z-score weighting. One provenance
+property and destination identifiers, a lean feature set (the programs' own comments cite the earlier feedback
+showing that more features hurt), and a three-member ensemble of unlike
+models blended by per-query z-scores. One provenance
 distinction matters: the seeded priors included the gate's finding that rank
 and count features carry headroom, so their presence is partly prompted; the
 specific constructions, the model, loss, ensemble, and weight selections,

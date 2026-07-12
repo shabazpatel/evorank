@@ -292,14 +292,14 @@ evaluations. Trained on the full dataset the family is a plateau: everything, in
 default rank:ndcg, lands within 0.001 NDCG@10 of everything else.
 
 \section{Campaign 2: Pipeline Space, Where the Loop Discovers}
-The second campaign evolves two blocks: feature-construction code over
-semantically named columns with a leakage-guarded train-fold statistics API,
-and a pipeline specification chosen from a whitelist (one to three members
-from XGBoost, LightGBM, and sklearn families with rank, pointwise, binary, or
-campaign-1 custom losses, combined by per-query z-score weighting or rank
-averaging). Feedback is stage-attributed so the loop can tell which axis
-earned each change; Figure~\ref{fig:feedback} shows it verbatim, exactly as
-it appears in the next prompt.
+Campaign 2 widens the search from the loss alone to the whole pipeline.
+The LLM now edits two blocks: feature-construction code over semantically
+named columns, backed by a leakage-guarded statistics API, and a pipeline
+specification chosen from a whitelist (one to three members from XGBoost,
+LightGBM, and sklearn families; rank, pointwise, binary, or campaign-1
+losses; z-score or rank-mean combining). Feedback is stage-attributed so the
+loop can tell which axis earned each change; Figure~\ref{fig:feedback}
+shows it verbatim, exactly as it appears in the next prompt.
 
 \begin{figure}
 \footnotesize
@@ -326,16 +326,15 @@ floor explaining that per-item rate encodings are data-starved.}
 \label{fig:feedback}
 \end{figure}
 
-A headroom gate precedes any LLM spend: a hand-built candidate from the ICDM
-2013 literature must clear 2.5 times the noise floor, and within-query rank
-features plus count encodings did ($+0.013$ NDCG@10). The gate surfaced a
-three-generation leakage study we report as a practitioner catalog: naive
+Before any LLM spend, the headroom gate: a hand-built candidate from the
+ICDM 2013 literature must clear 2.5 times the noise floor, and within-query
+rank features plus count encodings did ($+0.013$ NDCG@10). Building that
+candidate surfaced a three-generation leakage catalog worth reusing: naive
 train-fold target encoding costs $-0.10$ NDCG (the model memorizes its own
-labels); leave-one-out encoding is subtly worse at $-0.13$, because
-subtracting the row's own label plants a per-row offset perfectly correlated
-with that label, which histogram-based trees read as a label detector; and
-query-folded out-of-fold encoding is clean. Each generation was caught by the
-audit before any search depended on it.
+labels); the textbook leave-one-out fix is subtly worse at $-0.13$, because
+subtracting the row's own label plants a per-row offset the trees read as a
+label detector; query-folded out-of-fold encoding is clean. Each generation
+was caught by the audit before any search depended on it.
 
 \begin{table}
   \caption{Campaign 2 transfer audit: fast-train protocol, 59{,}902 held-out
@@ -355,30 +354,28 @@ audit before any search depended on it.
   \end{tabular}
 \end{table}
 
-Three seeds, 50 iterations each, about 150 LLM calls and ten dollars per
-seed, converged on the same interpretable core: five
-within-query percentile ranks (price, star rating, review score, location
-scores), count encodings of property and destination identifiers, a lean 20
-to 30 column feature set whose program comments cite the measured bloat
-evidence, and a diverse three-member ensemble (XGBoost rank:ndcg, LightGBM
-lambdarank, plus an extra-trees or binary member) under per-query z-score
-weighting. One provenance distinction matters for the discovery claim: the
-seeded priors included the gate's finding that rank and count features carry
-headroom, so their presence is partly prompted; the specific constructions,
-the model, loss, ensemble, and weight selections, and the unprompted
-inventions (per-query price z-normalization, quantile imputation of a
-heavy-missing location score) are the search's own, and the transfer-audited
-gains are independent of provenance. Table~\ref{tab:transfer} shows the
-transfer audit: roughly 70
-percent of selection-fold gains survive on 60k held-out queries, and all
-three seeds beat the tuned baseline. A paired query bootstrap (10,000
-resamples) makes the headline formal: the best seed beats the tuned baseline
-by +0.0057 NDCG@10 (95 percent CI [0.0041, 0.0073], one-sided p < 0.0001)
-and +0.0056 booking NDCG@10 (p < 0.0001), while the revenue delta is
-positive but within noise (+0.0008, CI [-0.0034, 0.0047]); the
-config-equalized full-scale comparison shows the same pattern (+0.0075
-NDCG@10, CI [0.0060, 0.0091], p < 0.0001). The frontier claim is therefore
-precise: significantly better relevance and conversion at matching revenue.
+What the search found: three seeds, 50 iterations and about ten dollars
+each, converged on the same interpretable core: five within-query percentile
+ranks (price, star rating, review score, location scores), count encodings
+of property and destination identifiers, a lean 20 to 30 column feature set
+whose program comments cite the measured bloat evidence, and a diverse
+three-member ensemble under per-query z-score weighting. One provenance
+distinction matters: the seeded priors included the gate's finding that rank
+and count features carry headroom, so their presence is partly prompted; the
+specific constructions, the model, loss, ensemble, and weight selections,
+and the unprompted inventions (per-query price z-normalization, quantile
+imputation of a heavy-missing location score) are the search's own, and the
+transfer-audited gains are independent of provenance.
+
+Does it transfer? Table~\ref{tab:transfer}: roughly 70 percent of
+selection-fold gains survive on 60k held-out queries, and all three seeds
+beat the tuned baseline. A paired query bootstrap (10,000 resamples) makes
+this formal: the best seed wins by +0.0057 NDCG@10 (95 percent CI [0.0041,
+0.0073], one-sided p < 0.0001) and +0.0056 booking NDCG@10 (p < 0.0001),
+with revenue positive but within noise (+0.0008, CI [-0.0034, 0.0047]); the
+full-scale comparison shows the same pattern (+0.0075 NDCG@10, p < 0.0001).
+The frontier claim is therefore precise: significantly better relevance and
+conversion at matching revenue.
 
 \begin{table}
   \caption{Full-scale comparison (trained on 280k queries, tested on 60k),
@@ -422,19 +419,22 @@ priors.
 The two campaigns differ in exactly one variable, the search space, and the
 same loop produced noise in one and transfer-audited Pareto dominance in the
 other. The deciding quantity is measurable in advance: the ratio of
-achievable effect sizes to fitness-fold noise. We suggest a headroom gate as
-cheap preregistration for discovery loops, and transfer-audited selection as
-the reporting standard. The result is not specific to the search algorithm: a
+achievable effect sizes to fitness-fold noise. We suggest the headroom gate as cheap preregistration for discovery
+loops, and transfer-audited selection as the reporting standard. The result is not specific to the search algorithm: a
 recalibrated AdaEvolve and an EvoX meta-evolution variant~\cite{evox}, each
 at double budget, land within the original seed spread on the held-out fold,
 consistent with headroom and evaluation fidelity, not search sophistication,
-governing outcomes. Guidance (prompt knowledge, evidence-rich feedback)
-is a speed and interpretability lever, but in our measurements evaluator-side
-investment (larger fitness folds, leakage-safe statistics, stage-attributed
-rejection messages the model learns from) carried more of the outcome. The economics compound this: a campaign costs about ten dollars and two
+governing outcomes. Together these results locate the leverage for future work in the
+measurement layer rather than the search controller: guidance and algorithm
+sophistication changed the speed and style of search, while evaluation
+fidelity, leakage-safe statistics, and rejection messages the model learns
+from moved outcomes. The clearest next step is multi-fidelity evaluation:
+screen candidates on the cheap fold and promote survivors to full-scale
+evaluation before selection, exposing scale-dependent features (per-entity
+rates, position effects) that a small fitness fold cannot see and that
+account for much of our remaining gap to the 2013 winners. The economics compound this: a campaign costs about ten dollars and two
 unattended hours, so the relevant unit is gain per human hour; the
-hand-built solutions our loop reconstructs took a seven-person team a
-competition season.
+solutions our loop reconstructs took a seven-person team a season.
 
 Limitations: one dataset (newer public datasets lack conversion and
 revenue labels, which is why open multi-objective LTR remains anchored to

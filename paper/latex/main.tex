@@ -21,17 +21,20 @@ machine-generated results are available at
 \url{https://github.com/shabazpatel/evorank}.}
 
 \author[1]{Shabaz Patel}[%
+orcid=0000-0002-9617-7710,
 email=shabaz.b.patel@gmail.com,
 ]
 \cormark[1]
 \fnmark[1]
-\author[1]{Rayhan Patel}[%
+\author[2]{Rayhan Patel}[%
+orcid=0009-0004-4882-2123,
+email=rayhanbp@umd.edu,
 ]
 \fnmark[1]
 \address[1]{Independent Researcher}
+\address[2]{University of Maryland, College Park, MD, USA}
 \cortext[1]{Corresponding author.}
 \fntext[1]{These authors contributed equally.}
-%% TODO: add Rayhan's email and any ORCID iDs.
 
 \begin{abstract}
 We present EvoRank, an open autonomous ranking engineer: an LLM-guided
@@ -84,7 +87,7 @@ that seeded domain knowledge and evidence-rich diagnostic feedback change the
 speed and style of search but not what generalizes; (3) the positive case under identical auditing: pointing the same loop at a search space whose
 effect sizes clear the noise floor yields transfer-audited pipelines,
 better on every objective at once, in all three runs, which reconstruct and extend the ICDM 2013 challenge winners' hand-built
-solutions; and (4) the released tool and audit stack, including the headroom gate, a cheap pre-check of whether a search space
+solutions; and (4) the released tool and its audit stack (the acceptance and stopping criteria applied to every result), including the search-space headroom gate, a cheap pre-check of whether a search space
 will reward the loop.
 
 \section{Related Work}
@@ -93,14 +96,14 @@ AlphaEvolve~\cite{alphaevolve} pair an LLM
 mutation operator with evolutionary search over programs and automated
 evaluators, with open engines~\cite{adaevolve,evox} reproducing the pattern;
 industrial ranking agents (REA, GEARS)~\cite{rea} apply agentic
-experimentation to production ranking behind closed doors. We contribute the missing measurement layer: an identical loop shown provably selecting noise in one search space and
-provably discovering in another, in the first open, reproducible instance
-of the pattern for tabular LTR.
+experimentation to production ranking behind closed doors. We add the missing measurement layer: the same loop shown selecting noise
+in one search space and discovering in another, in an open, reproducible
+instance of the pattern for tabular LTR.
 
 \textbf{Automated loss discovery.} GLO~\cite{glo}, AM-LFS~\cite{amlfs},
 AutoLoss-Zero~\cite{autolosszero}, and CSE-Autoloss~\cite{cseautoloss}
-search loss functions by recombining small mathematical building blocks,
-mostly for vision; LambdaLoss~\cite{lambdaloss} is the hand-derived counterpart (a loss
+search loss functions from small mathematical building blocks, mostly for
+vision; LambdaLoss~\cite{lambdaloss} is the hand-derived counterpart (a loss
 built from a bound on the ranking metric);
 RankEvolve~\cite{rankevolve} applies evolutionary search to unsupervised
 lexical retrieval with a single-number score. We bring loss search to supervised multi-objective ranking with
@@ -139,8 +142,7 @@ solutions autonomously, for about ten dollars.
   \caption{The EvoRank system. Lane A: frozen data preparation producing a
   small scoring fold and a large held-out fold. Lane B: the loop, one LLM call per iteration, from archive through
   prompt, edit, guarded evaluation, and feedback (Figure~2) back to the
-  archive; broken candidates return explanations. Dashed: optional expert knowledge, ablated in
-  campaign 1. Lane C: the honesty harness: pre-spend gate, baselines on
+  archive. Dashed: optional expert knowledge, ablated in campaign 1. Lane C: the audit stack: pre-spend headroom gate, baselines on
   equal terms, and the held-out audit that decides what counts.}
   \label{fig:system}
 \end{figure}
@@ -161,8 +163,7 @@ We use SkyDiscover's AdaEvolve search controller~\cite{adaevolve}. Its program d
 iterations to islands by recent improvement, and each island adapts its
 exploration intensity accordingly. The database keeps a Pareto archive, the set of best available trade-offs
 over the three objectives (ndcg, booking ndcg, pooled dollar-weighted
-revenue), with a single-number score used only for tie-breaking. On stagnation the controller can prompt the LLM for a
-high-level strategy change rather than a local edit.
+revenue), with a single-number score used only for tie-breaking.
 
 \subsection{Preliminaries: the algorithms in brief}
 \emph{Ranking and NDCG@k.} A query returns a list of items with relevance
@@ -191,8 +192,7 @@ sum. It was the challenge winners' choice and what our pipelines select.
 
 \emph{Out-of-fold target encoding.} Encoding a categorical column by the average label of its value (a
 hotel's historical booking rate) leaks labels into features unless each row
-is encoded from other query-folds only. Section 5 quantifies what goes
-wrong.
+is encoded from other query-folds only.
 
 \emph{The statistics.} A paired query bootstrap resamples queries and recomputes the difference
 between two systems thousands of times, treating the query as the unit of
@@ -213,16 +213,19 @@ specification. These receive zero fitness together with a message explaining
 what went wrong, which enters the next prompt, so the guardrails double as
 teaching signals.
 
-\subsection{The audit stack}
-The audit stack, applied identically to every campaign: (a) paired query
+\subsection{The audit stack: acceptance and stopping criteria for the loop}
+\label{sec:audit}
+The audit stack, applied identically to every campaign: (a) the headroom
+gate, run before any LLM spend: one hand-built candidate must beat the
+fitness fold's noise floor by a set margin, or the search space is not
+worth searching; (b) paired query
 bootstrap for every comparison, with noise-gated deltas inside the loop's
-own feedback; (b) equal-budget random-search controls; (c) equal tuning on both sides (discovered programs get the same Optuna
-budget as the baseline); (d) the transfer audit itself, rescoring every
-checkpoint's selected program on 60k held-out queries; (e) three-objective
-frontier quality (hypervolume); and (f) component-removal tests on
-discovered programs. Baselines: LambdaMART (XGBoost rank:ndcg) with 40 Optuna trials, re-tuned
-at every training-set size we report, plus an equal-budget random search
-over the loop's candidate space.
+own feedback; (c) equal-budget random-search controls; (d) equal tuning on both sides (discovered programs get the same Optuna
+budget as the baseline); (e) the transfer audit itself, re-scoring every
+checkpoint's selected program on 60k held-out queries; (f) three-objective
+frontier quality (hypervolume); and (g) component-removal tests on
+discovered programs. The tuned baseline throughout is LambdaMART (XGBoost
+rank:ndcg) with 40 Optuna trials.
 
 \section{Campaign 1: Objective Space, Where the Loop Selects Noise}
 The evolvable piece is the LambdaMART gradient function, computed per
@@ -241,8 +244,7 @@ unseen data the evolved objectives are indistinguishable from where they
 started, blind mutation did as well as guided search, and ordinary tuning
 beat both. The mechanism is measured: a single edit's true effect is 0.002 to 0.005
 NDCG@10, while the selection fold's measurement noise is $\pm 0.008$ to
-$0.015$, so an edit's effect is smaller than the error in measuring it, and
-picking the best score means picking luck. Enlarging the fitness fold's validation side from 1.6k to 6k queries
+$0.015$, so picking the best score means picking luck. Enlarging the fitness fold's validation side from 1.6k to 6k queries
 halves that noise and triples the gain surviving transfer, the only
 intervention that moved it.
 
@@ -251,9 +253,7 @@ the search faster, not truer. Seeded runs need only 1 to 3 iterations to
 match the best score an equal-budget random search reaches in its entire
 run; unseeded runs need 7 to 23. Seeded runs also end with a better three-objective frontier in every run. What transfers
 to held-out data is unchanged. A diagnostic feedback channel (noise-gated deltas, per-segment breakdowns,
-probes into the candidate's training gradients) changes nothing measurable across three runs. A probe byproduct: a term moving only 0.09 percent of the training
-gradient still costs 0.009 revenue when removed, so tiny systematic
-pressure compounds.
+probes into the candidate's training gradients) changes nothing measurable across three runs.
 
 Analysis beat further search: removing the best objective's components one
 at a time (five evaluations in total) explained its behavior and exposed one
@@ -276,25 +276,21 @@ the loop can tell which axis earned each change; Figure~\ref{fig:feedback} shows
 \begin{verbatim}
 scores: ndcg=0.4357 (+0.0139 vs seed, +/-0.0054, SIGNIFICANT) |
   book_ndcg=0.4604 (+0.0142, SIGNIFICANT) | revenue=0.4309 (+0.0217, SIGNIFICANT)
-features: 80 columns (71 raw + 9 engineered: 6 within-query
-  ranks, 2 counts, ...), build 0.6s
 members: [0] xgb/rank:ndcg: val ndcg 0.4325 (2s)
          [1] lgbm/lambdarank: val ndcg 0.4261 (4s)
          [2] sklearn/ert: val ndcg 0.4171 (28s)
 ensemble: zscore_weighted [0.55, 0.33, 0.12] = 0.4357,
   best single 0.4325 (+0.0033)
 \end{verbatim}
-\caption{Stage-attributed feedback for one campaign 2 candidate, verbatim
-from the run logs (feature list elided). The +/- changes are measured
+\caption{Stage-attributed feedback for one campaign 2 candidate, excerpted
+from the run logs (feature-stage line elided). The +/- changes are measured
 against the starting pipeline and flagged SIGNIFICANT only above noise;
 per-member lines attribute quality to model and loss choices; the ensemble
-line reports the margin over the best member. Rejected candidates receive
-an explanation instead, for example that a per-hotel rate cannot be
-estimated from so few rows.}
+line reports the margin over the best member.}
 \label{fig:feedback}
 \end{figure}
 
-Before any LLM spend, we applied the headroom gate: a hand-built candidate
+Before any LLM spend, we applied the headroom gate (Section~\ref{sec:audit}): a hand-built candidate
 from the ICDM 2013 literature had to beat the noise floor by 2.5 times, and
 within-query rank features plus count encodings did ($+0.013$ NDCG@10).
 Building that candidate surfaced three successively subtler leakage bugs.
@@ -329,12 +325,11 @@ iterations and ten dollars each, converged on the same interpretable core: withi
 ranks of price, star rating, review and location scores, count encodings of
 property and destination identifiers, a lean feature set (the programs' own comments cite the earlier feedback
 showing that more features hurt), and a three-member ensemble of unlike
-models blended by per-query z-scores. One provenance distinction matters: the seeded knowledge included the
-gate's finding that rank and count features carry headroom, so their
-presence is partly prompted; the specific constructions, the model, loss,
-ensemble, and weight selections, and the unprompted inventions (per-query
-price normalization, percentile-filling a mostly-missing location score)
-are the search's own, and the audited gains hold regardless.
+models blended by per-query z-scores. One provenance caveat: the seeded knowledge included the gate's finding
+that rank and count features carry headroom, so their presence is partly
+prompted; the specific constructions, model, loss, ensemble, and weight
+choices, and unprompted inventions (per-query price normalization,
+percentile-filling a mostly-missing location score) are the search's own.
 
 \begin{figure}
 \footnotesize
@@ -415,24 +410,37 @@ The two campaigns differ in exactly one variable, the search space, and the
 same loop produced noise in one and transfer-audited Pareto dominance in the
 other (Figure~\ref{fig:contrast}). The deciding quantity is measurable in advance: the ratio of
 achievable effect sizes to fitness-fold noise. We suggest the headroom gate as a cheap pre-spend go/no-go check for
-discovery loops, and transfer-audited selection as the reporting standard. Our results also rank where a team should invest next. Evaluators first:
-everything that moved outcomes lived there, fold size, leakage-safe
+discovery loops, and transfer-audited selection as the reporting standard. Our results also rank where a team should invest next: evaluators first
+(everything that moved outcomes lived there: fold size, leakage-safe
 statistics, rejection messages the model learns from, the gate, and the
-audit. Application spaces second: headroom relative to noise decides the
-outcome, so choosing the space is choosing the result. Search algorithms
-last: a recalibrated AdaEvolve and an EvoX meta-evolution
+audit); application spaces second (headroom relative to noise decides the
+outcome, so choosing the space is choosing the result); search algorithms
+last (a recalibrated AdaEvolve and an EvoX meta-evolution
 variant~\cite{evox}, each at double budget, landed inside the spread of the
-original three runs, their internal signals drowned by the same noise that
-governs everything else. The clearest fusion of the first two is
-multi-fidelity evaluation: screen candidates on the cheap fold, promote
-survivors to full-scale evaluation before selection, and expose
-scale-dependent features (per-entity rates, position effects) that a small
-fold cannot see, which account for much of our gap to the 2013 winners.
+original three runs, their internal signals drowned by the same noise). The
+natural next step is multi-fidelity evaluation: screen on the cheap fold,
+promote survivors to full scale before selection, and so expose the
+scale-dependent features (per-entity rates, position effects) behind much
+of our gap to the 2013 winners.
 
-Limitations: one dataset (newer public datasets lack conversion and
-revenue labels, which is why open multi-objective LTR remains anchored to
-this benchmark); three runs per condition; revenue is a proxy metric; and
-discovered pipelines were audited for transfer, not online effects.
+\textbf{Limitations and generalization.} Our evidence comes from one
+dataset, now thirteen years old, because newer public LTR datasets lack the
+conversion and revenue labels a multi-objective study needs~\cite{survey2024}.
+The audit stack itself is dataset-agnostic: it needs only a small fitness
+fold, a larger held-out fold, a paired bootstrap on the metric of interest,
+and one strong tuned baseline, and the headroom gate is a recipe for any
+query-grouped ranking or recommendation task: measure the fitness fold's
+noise by query bootstrap, hand-build one candidate from the domain's
+literature, and require its gain to clear that noise by a set margin (2.5
+times here). We compared two search spaces; intermediate ones (features
+plus loss, model plus loss) are untested, and the gate is the tool for
+ranking them before spending. Three runs per condition suffice for the
+paired-bootstrap headline, which every run cleared, but not to
+characterize the variance of the search itself. We did not compare against other LLM-guided discovery
+engines~\cite{alphaevolve,gepa}; the audit is engine-agnostic (the EvoX arm
+above is one such swap), and a controlled comparison is future work.
+Finally, revenue is a proxy metric, and discovered pipelines were audited
+for transfer, not for online effects.
 
 \section{Conclusion}
 For teams bringing LLM-driven discovery to their own ranking systems, this
@@ -440,11 +448,8 @@ study distills to a working procedure: measure the noise of the evaluation
 you can afford; verify with one hand-built candidate that your search space
 offers effects above that noise; only then run the loop, with leakage-safe
 statistics and rejection messages the model can learn from; and let a
-held-out audit, not the loop's own scores, decide what counts. The loop is neither magic nor broken: its discoveries are real precisely
-when the search space offers effect sizes the fitness signal can resolve,
-and both are measurable before any budget is spent. Code, configs, seeds,
-per-iteration logs, discovered programs, and audit scripts are released to
-make the procedure directly reusable, at
+held-out audit, not the loop's own scores, decide what counts. Code, configs, seeds,
+logs, discovered programs, and audit scripts are released at
 \url{https://github.com/shabazpatel/evorank}.
 
 \begin{thebibliography}{99}
@@ -454,9 +459,10 @@ Nature 625:468--475, 2024.
 \bibitem{alphaevolve} A. Novikov, N. V\~{u}, M. Eisenberger, et al.
 AlphaEvolve: A coding agent for scientific and algorithmic discovery.
 arXiv:2506.13131, 2025.
-\bibitem{rea} Meta Engineering. Ranking Engineer Agent (REA): Autonomous AI
-system accelerating Meta's ads ranking innovation. Engineering at Meta blog,
-March 2026.
+\bibitem{rea} Meta Engineering. Ranking Engineer Agent (REA): The Autonomous
+AI Agent Accelerating Meta's Ads Ranking Innovation. Engineering at Meta
+blog, 17 March 2026. \url{https://engineering.fb.com/2026/03/17/developer-tools/ranking-engineer-agent-rea-autonomous-ai-system-accelerating-meta-ads-ranking-innovation/}
+(accessed 17 August 2026).
 \bibitem{adaevolve} M. Cemri, S. Agrawal, A. Gupta, et al. AdaEvolve:
 Adaptive LLM Driven Zeroth-Order Optimization. arXiv:2602.20133, 2026.
 \bibitem{evox} S. Liu, S. Agarwal, M. Maheswaran, et al. EvoX:

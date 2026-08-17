@@ -2,7 +2,6 @@
 data/raw/
 data/prepared/
 data/prepared_fast/
-data/feature_map.csv
 
 # Run outputs, logs, and SkyDiscover checkpoints. The machine-generated
 # results the paper cites (runs/summary) ARE committed; raw checkpoints,
@@ -10,9 +9,32 @@ data/feature_map.csv
 # preserved in discovered/.
 runs/*
 !runs/.gitkeep
-!runs/summary/
-runs/summary/mechanism_ablation/
+# ...except the small inputs the paper's analysis scripts read, so a fresh clone
+# can rerun analyze/*.py without re-running the search or Optuna:
+#   summary CSVs, baseline records (tuned hyperparameters), every checkpoint's
+#   best program, the mechanism-ablation variants, the random-search control's
+#   programs, and the run launch configs.
+!runs/*.json
+!runs/*/
+runs/*/*
+!runs/*/checkpoints/
+runs/*/checkpoints/*
+!runs/*/checkpoints/checkpoint_*/
+runs/*/checkpoints/checkpoint_*/*
+!runs/*/checkpoints/checkpoint_*/best_program.py
+!runs/summary/*
 runs/summary/*/
+!runs/summary/mechanism_ablation/
+runs/summary/mechanism_ablation/*
+!runs/summary/mechanism_ablation/*.py
+!runs/random_search_s0/*.py
+!runs/random_search_s0/history.json
+!runs/_configs/*.yaml
+!runs/_configs/*.sh
+# Kaggle late-submission files (86 MB each; regenerate with analyze/kaggle_submission.py).
+# The scored result is recorded in runs/summary/PIPELINE_CAMPAIGN.md.
+runs/summary/kaggle_submission_*.csv
+runs/summary/kaggle_submission_*.csv.gz
 
 # The wrong Kaggle competition (hotel-cluster classification); kept locally,
 # not part of the project. See CLAUDE.md Section 0.2.
@@ -27,6 +49,12 @@ notebooks/broken_seed.py
 # Python
 __pycache__/
 *.pyc
+# Paper build artifacts (the final camera-ready PDF is committed as paper/EvoRank_GenAIECommerce2026.pdf)
+paper/latex/main*.pdf
+paper/latex/ceurart-master/
+paper/latex/compile.log
+paper/arxiv/*.pdf
+paper/submitted_*.pdf
 # Local tooling and OS junk
 .claude/
 .DS_Store

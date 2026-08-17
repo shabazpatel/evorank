@@ -83,15 +83,6 @@ def seed_val_predictions(train_df, val_df, feats) -> np.ndarray:
 
 # ------------------------------------------------------------- query helpers
 
-def _per_query_tables(val_df: pd.DataFrame) -> dict:
-    """Static per-query facts about the val fold (computed once per call)."""
-    g = val_df.groupby("qid", sort=False)
-    return {
-        "has_booking": (g["booking"].max() > 0).to_numpy(),
-        "rev_ideal_rank": None,  # filled lazily
-    }
-
-
 def _booked_ranks(val_df: pd.DataFrame, preds: np.ndarray) -> np.ndarray:
     """Rank (0-based) of the booked item per query; NaN for bookingless queries."""
     gs = group_sizes_of(val_df)

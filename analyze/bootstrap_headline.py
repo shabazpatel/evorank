@@ -1,8 +1,8 @@
 """Formal paired query bootstrap for the paper's two headline comparisons.
 
-Regime A (Table 2, the loop's own regime): pipeline_s2 vs lambdamart_optuna,
+Regime A (Table 1, the loop's own regime): pipeline_s2 vs lambdamart_optuna,
 both fast-trained, scored on the full 60k-query test fold.
-Regime B (Table 3, full scale, config-equalized): pipeline_s1_deepcfg vs
+Regime B (Table 2, full scale, capacity-equalized): pipeline_s1_deepcfg vs
 lambdamart_optuna_full, both trained on the full train fold.
 
 For each pair: per-query NDCG@10 and booking-NDCG@10 differences, resampled
@@ -112,6 +112,8 @@ def paired_bootstrap(name, test_frame, preds_pipe, preds_base):
 def main() -> None:
     fast_train, _fv, _ft, feats, _s = get_dataset(fast=True)
     full_train, _v2, full_test, feats_full, _s2 = get_dataset(fast=False)
+    if str(_s).startswith("synthetic") or str(_s2).startswith("synthetic"):
+        sys.exit("refusing to run on the synthetic fallback; prepare data/prepared first")
     print(f"test fold: {full_test.qid.nunique():,} queries", flush=True)
     rows = []
 

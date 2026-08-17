@@ -6,13 +6,21 @@ Caveat that must accompany any use of these numbers: the ICDM leaderboard
 test set is hidden and unreproducible; this is a comparable-protocol
 approximation on our own held-out split, never a leaderboard claim.
 
-Methods: seed pipeline, lambdamart_optuna (stored params), pipeline_s0/s1/s2.
+Methods: seed pipeline, lambdamart_optuna (small-fold tuned params),
+lambdamart_optuna_full (re-tuned at full scale, runs/lambdamart_optuna_full.json),
+pipeline_s0/s1/s2 (checkpoint best programs), pipeline_s1_deepcfg
+(discovered/pipeline_s1_deepcfg.py: the s1 recipe with the full-scale tuned
+XGBoost settings on its XGBoost member, a scaled-up LightGBM member, and no
+third member), and pipeline_s1_features_only (the s1 features under the
+full-scale tuned single XGBoost model; isolates the feature contribution).
 Appends incrementally to runs/summary/fullscale_ndcg38.csv; resume-safe.
 
     uv run python analyze/fullscale_ndcg38.py
+    uv run python analyze/fullscale_ndcg38.py --methods pipeline_s1_features_only --out /tmp/x.csv
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import importlib.util
 import json
@@ -32,6 +40,9 @@ from ltr.dataset import get_dataset  # noqa: E402
 from ltr.metrics import group_sizes_of, metrics_bundle  # noqa: E402
 
 OUT = ROOT / "runs" / "summary" / "fullscale_ndcg38.csv"
+ALL_METHODS = ["lambdamart_optuna", "lambdamart_optuna_full", "seed_pipeline",
+               "pipeline_s0", "pipeline_s1", "pipeline_s2", "pipeline_s1_deepcfg",
+               "pipeline_s1_features_only"]
 FIELDS = ["method", "ndcg10", "ndcg38", "book_ndcg10", "revenue10", "train_seconds"]
 
 
@@ -58,8 +69,41 @@ def append(row):
         w.writerow(row)
 
 
+def _load_module(name, prog):
+    spec = importlib.util.spec_from_file_location(name, prog)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _tuned_params(json_name: str):
+    opt = json.loads((ROOT / "runs" / json_name).read_text())
+    bp = dict(opt["extra"]["best_params"])
+    n = bp.pop("num_boost_round")
+    return bp, n
+
+
+def _xgb_rank(Xtr, ytr, group_sizes, Xte, bp, n):
+    dtr = xgb.DMatrix(Xtr, label=ytr)
+    dtr.set_group(group_sizes)
+    bst = xgb.train({"objective": "rank:ndcg", "tree_method": "hist", "seed": 0, **bp},
+                    dtr, num_boost_round=n)
+    return bst.predict(xgb.DMatrix(Xte))
+
+
 def main() -> None:
-    full_train, _fv, full_test, _f, _s = get_dataset(fast=False)
+    global OUT
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--methods", nargs="*", default=None,
+                    help="subset of method names to (re)compute; default all not yet in the CSV")
+    ap.add_argument("--out", type=pathlib.Path, default=OUT)
+    args = ap.parse_args()
+    OUT = args.out
+    only = set(args.methods) if args.methods else None
+
+    full_train, _fv, full_test, _f, src = get_dataset(fast=False)
+    if str(src).startswith("synthetic"):
+        sys.exit("refusing to run on the synthetic fallback; prepare data/prepared first")
     print(f"train {full_train.qid.nunique():,} queries / test {full_test.qid.nunique():,}",
           flush=True)
     data = {"train": {"frame": full_train, "view": semantic(full_train),
@@ -69,6 +113,8 @@ def main() -> None:
                                  "rev": full_train["rev"].to_numpy(np.float64)}}}
     test_view = semantic(full_test)
     skip = done()
+    if only is not None:
+        skip = {m for m in ALL_METHODS if m not in only} | (skip - only)
 
     def score(name, preds, dt):
         m10 = metrics_bundle(full_test, preds, k=10)
@@ -80,33 +126,48 @@ def main() -> None:
         print(f"{name:<20} NDCG@10 {m10['ndcg']:.4f}  NDCG@38 {m38['ndcg']:.4f} "
               f"(train {dt:.0f}s)", flush=True)
 
-    # optuna baseline (raw features, stored tuned params)
-    if "lambdamart_optuna" not in skip:
+    # tuned single-model baselines on raw features: small-fold tuning and full-scale re-tune
+    for name, js in (("lambdamart_optuna", "lambdamart_optuna.json"),
+                     ("lambdamart_optuna_full", "lambdamart_optuna_full.json")):
+        if name in skip:
+            print(f"skip {name}", flush=True)
+            continue
         t0 = time.time()
-        opt = json.loads((ROOT / "runs" / "lambdamart_optuna.json").read_text())
-        bp = dict(opt["extra"]["best_params"]); n = bp.pop("num_boost_round")
+        bp, n = _tuned_params(js)
         Xtr = data["train"]["view"].drop(columns=["qid"]).to_numpy(np.float64)
-        dtr = xgb.DMatrix(Xtr, label=data["train"]["labels"]["rel"])
-        dtr.set_group(group_sizes_of(full_train))
-        bst = xgb.train({"objective": "rank:ndcg", "tree_method": "hist", "seed": 0, **bp},
-                        dtr, num_boost_round=n)
-        preds = bst.predict(xgb.DMatrix(test_view.drop(columns=["qid"]).to_numpy(np.float64)))
-        score("lambdamart_optuna", preds, time.time() - t0)
+        Xte = test_view.drop(columns=["qid"]).to_numpy(np.float64)
+        preds = _xgb_rank(Xtr, data["train"]["labels"]["rel"], group_sizes_of(full_train), Xte, bp, n)
+        score(name, preds, time.time() - t0)
 
     programs = {"seed_pipeline": ROOT / "seed" / "initial_pipeline.py"}
     for run in ("pipeline_s0", "pipeline_s1", "pipeline_s2"):
         cps = sorted((ROOT / "runs" / run / "checkpoints").glob("checkpoint_*"),
                      key=lambda p: int(p.name.rsplit("_", 1)[-1]))
-        programs[run] = cps[-1] / "best_program.py"
+        if cps:
+            programs[run] = cps[-1] / "best_program.py"
+        else:  # fresh clone without checkpoints: discovered/ holds the same files
+            programs[run] = ROOT / "discovered" / f"{run}_best.py"
+    programs["pipeline_s1_deepcfg"] = ROOT / "discovered" / "pipeline_s1_deepcfg.py"
+
+    # discovered s1 features under the full-scale tuned single XGBoost model
+    if "pipeline_s1_features_only" not in skip:
+        t0 = time.time()
+        mod = _load_module("fs_feat_only", ROOT / "discovered" / "pipeline_s1_best.py")
+        stats = TrainStats(data["train"]["view"], data["train"]["labels"])
+        stats._mode = "train"
+        Xtr = mod.build_features(data["train"]["view"].copy(), stats).fillna(0.0).to_numpy(np.float64)
+        stats._mode = "apply"
+        Xte = mod.build_features(test_view.copy(), stats).fillna(0.0).to_numpy(np.float64)
+        bp, n = _tuned_params("lambdamart_optuna_full.json")
+        preds = _xgb_rank(Xtr, data["train"]["labels"]["rel"], group_sizes_of(full_train), Xte, bp, n)
+        score("pipeline_s1_features_only", preds, time.time() - t0)
 
     for name, prog in programs.items():
         if name in skip:
             print(f"skip {name}", flush=True)
             continue
         t0 = time.time()
-        spec = importlib.util.spec_from_file_location(f"fs_{name}", prog)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
+        mod = _load_module(f"fs_{name}", prog)
         members, ens = _validate_spec(mod.PIPELINE)
         stats = TrainStats(data["train"]["view"], data["train"]["labels"])
         stats._mode = "train"

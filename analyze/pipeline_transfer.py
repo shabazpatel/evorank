@@ -32,6 +32,8 @@ RUNS = ["pipeline_s0", "pipeline_s1", "pipeline_s2", "pipeline_v2_s0", "pipeline
 
 def full_test_semantic():
     _t, _v, full_test, _f, _s = get_dataset(fast=False)
+    if str(_s).startswith("synthetic"):
+        sys.exit("refusing to run on the synthetic fallback; prepare data/prepared first")
     fmap = pd.read_csv(ROOT / "data" / "prepared" / "feature_map.csv")
     sem = full_test.rename(columns=dict(zip(fmap["f_index"], fmap["original"])))
     view = sem.drop(columns=[c for c in ("rel", "booking", "rev", "random_flag")

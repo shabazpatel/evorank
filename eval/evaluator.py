@@ -181,6 +181,7 @@ if __name__ == "__main__":
 
     # degenerate candidate (NaN gradient) must be rejected, not scored
     broken = root / "runs" / "_broken_probe.py"
+    broken.parent.mkdir(parents=True, exist_ok=True)
     broken.write_text(
         "import numpy as np\n"
         "def lambdamart_objective(predt, rel, booking, rev, group_slices, sigma=1.0):\n"

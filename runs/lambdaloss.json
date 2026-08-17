@@ -1,0 +1,12 @@
+{
+  "name": "lambdaloss",
+  "metrics": {
+    "ndcg": 0.381586808971581,
+    "book_ndcg": 0.39656983194494666,
+    "revenue": 0.3479607762257301
+  },
+  "extra": {
+    "source": "prepared_fast (prepared_fast)",
+    "variant": "ndcg_loss2"
+  }
+}

@@ -8,7 +8,9 @@ metric; for revenue it is the pooled ratio sum(realized)/sum(ideal), recomputed
 per resample.
 
 Reports the observed delta, a 95 percent CI for the delta, and a two-sided
-bootstrap p-value, per metric and comparison. Writes runs/summary/significance.csv.
+bootstrap p-value, per metric and comparison. Writes
+runs/summary/significance_{fast_val|fasttrain_fullfold_test|...}.csv depending on
+--full / --eval-full / --fold. Reported p-values are floored at 1/resamples.
 
     uv run python analyze/significance.py --resamples 10000
 """

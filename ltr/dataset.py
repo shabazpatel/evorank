@@ -119,7 +119,7 @@ def get_dataset(fast: bool = True, seed: int = 7):
     loop, ``data/prepared`` for final reporting), otherwise a synthetic fallback.
     ``src`` names the source so callers and logs can report which was used.
     """
-    key = ("prepared", fast)
+    key = ("prepared", fast, seed)
     if key in _CACHE:
         return _CACHE[key]
 

@@ -1,4 +1,4 @@
-"""Mechanism ablation of the best discovered objective (paper figure 1).
+"""Mechanism ablation of the best discovered objective (campaign 1 component-removal tests).
 
 Takes the discovered program and knocks out one mechanism at a time by source
 transformation, then scores every variant through the exact same evaluate()

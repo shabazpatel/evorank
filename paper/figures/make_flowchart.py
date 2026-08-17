@@ -1,7 +1,7 @@
 """Render the EvoRank system figure for the paper (Figure 1).
 
 Academic style: restrained monochrome boxes, one accent color reserved for
-the honesty harness (the paper's contribution), three labeled lanes, and the
+the audit stack (the paper's contribution), three labeled lanes, and the
 full pipeline including the headroom gate and the transfer audit.
 
     uv run python make_flowchart.py
@@ -17,7 +17,7 @@ from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 INK = "#222222"
 EDGE = "#555555"
 FILL = "#f8f8f8"
-ACCENT = "#1f4e79"       # honesty harness
+ACCENT = "#1f4e79"       # audit stack
 ACCENT_FILL = "#eaf1f8"
 GUIDE_EDGE = "#8a6d1a"   # knowledge base (dashed, optional)
 GUIDE_FILL = "#fdf8ea"
@@ -62,7 +62,7 @@ def lane(x, y, text):
 # ----------------------------------------------------------------- lanes
 lane(0.015, 0.965, "A. Data (frozen)")
 lane(0.315, 0.965, "B. Evolution loop (one LLM call per iteration)")
-lane(0.015, 0.255, "C. Honesty harness")
+lane(0.015, 0.255, "C. Audit stack")
 
 # ----------------------------------------------------------------- A: data
 box(0.015, 0.760, 0.220, 0.150, "E-commerce search logs",

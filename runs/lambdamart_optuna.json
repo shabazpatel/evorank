@@ -1,0 +1,22 @@
+{
+  "name": "lambdamart_optuna",
+  "metrics": {
+    "ndcg": 0.43295596251336294,
+    "book_ndcg": 0.4576379058373763,
+    "revenue": 0.425843978703572
+  },
+  "extra": {
+    "source": "prepared_fast (prepared_fast)",
+    "trials": 40,
+    "best_params": {
+      "eta": 0.1355113165098545,
+      "max_depth": 3,
+      "min_child_weight": 7.216635702812188,
+      "subsample": 0.8963627459017791,
+      "colsample_bytree": 0.6110890772991874,
+      "gamma": 2.69658687658408e-06,
+      "lambda": 2.5891380647931777,
+      "num_boost_round": 163
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "random_search_s0",
+  "metrics": {
+    "ndcg": 0.4300815086917297,
+    "book_ndcg": 0.45061294122293066,
+    "revenue": 0.4027877766746037
+  },
+  "extra": {
+    "trials": 40,
+    "seed": 0,
+    "best_iteration": 3,
+    "best_params": {
+      "w_rel": 1.083,
+      "w_book": 5.994,
+      "w_rev": 2.113,
+      "rev_expr": "np.minimum(v, 2500.0) / 2500.0",
+      "sigma": 0.542,
+      "disc_pow": 0.686
+    },
+    "history_file": "/Users/shabazpatel/Desktop/Project/skydiscover/evorank/runs/random_search_s0/history.json"
+  }
+}

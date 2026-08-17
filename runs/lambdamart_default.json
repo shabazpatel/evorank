@@ -1,0 +1,11 @@
+{
+  "name": "lambdamart_default",
+  "metrics": {
+    "ndcg": 0.42302324147918524,
+    "book_ndcg": 0.447378576824717,
+    "revenue": 0.3960448836440401
+  },
+  "extra": {
+    "source": "prepared_fast (prepared_fast)"
+  }
+}

@@ -1,0 +1,64 @@
+# EvoRank memory-OFF condition (control).
+# Identical to evorank_memory_on.yaml except prompt.system_message, which is
+# generic here and embeds knowledge/ltr_priors.md in the memory-on config.
+# Launcher must also set EVORANK_FEEDBACK=minimal for this condition.
+
+max_iterations: 40
+checkpoint_interval: 5
+log_level: "INFO"
+random_seed: 2
+language: python
+diff_based_generation: true
+max_solution_length: 20000
+
+llm:
+  api_base: "https://api.anthropic.com/v1/"
+  api_key: ${ANTHROPIC_API_KEY}
+  models:
+    - name: "claude-sonnet-5"
+      weight: 1.0
+  # claude-sonnet-5 rejects non-default sampling params; keep temperature unset.
+  temperature: null
+  max_tokens: 8192
+  timeout: 300
+
+search:
+  type: "adaevolve"
+  num_context_programs: 4
+  database:
+    population_size: 20
+    num_islands: 2
+    migration_interval: 15
+    migration_count: 5
+    pareto_objectives:
+      - ndcg
+      - book_ndcg
+      - revenue
+    higher_is_better:
+      ndcg: true
+      book_ndcg: true
+      revenue: true
+    fitness_key: ndcg
+    pareto_objectives_weight: 0.4
+    enable_error_retry: true
+    max_error_retries: 2
+
+prompt:
+  system_message: |
+    You are optimizing a ranking objective for e-commerce hotel search. The
+    program defines lambdamart_objective(predt, rel, booking, rev, group_slices,
+    sigma=1.0). It returns per-row (grad, hess) for XGBoost training, computed
+    per query over (start, end) row slices. Per row you have rel (graded 5
+    booked, 1 clicked, 0 neither), booking (binary), and rev (booking revenue in
+    USD, 0 if not booked). Only edit the code inside the EVOLVE-BLOCK markers.
+    Keep the signature unchanged, keep grad and hess finite, keep hess positive.
+    Candidates are scored on three metrics, ndcg, book_ndcg, and revenue, all
+    higher is better, and kept on a Pareto frontier. Improve the metrics.
+
+evaluator:
+  timeout: 120
+  max_retries: 2
+  cascade_evaluation: false
+
+monitor:
+  enabled: false

@@ -1,9 +1,13 @@
-"""Seed pipeline for EvoRank-Pipeline (Part 2).
+"""Full-scale configuration of the run-s1 discovered pipeline (paper Table 2,
+last row; the Kaggle late submission; bootstrap regime B).
 
-Two evolvable blocks: feature construction (code) and pipeline spec
-(declarative, whitelisted). The seed is the raw-feature passthrough trained
-with a single default LambdaMART, which reproduces the Part 1 baseline. See
-paper/pipeline_design.md for the search-space contract and the stats API.
+Provenance: features are byte-identical to discovered/pipeline_s1_best.py.
+The PIPELINE spec is a hand-derived variant of s1 for full-data training, not
+a search output: the XGBoost member takes the baseline's full-scale Optuna
+settings (runs/lambdamart_optuna_full.json, gamma dropped as negligible), the
+LightGBM member is scaled up (num_leaves 63 -> 255, n_estimators 200 -> 300,
+subsample 0.8 -> 0.85), the sklearn ERT member is dropped, and the z-score
+weights become [0.6, 0.4]. It received no search or tuning of its own.
 """
 
 # EVOLVE-BLOCK-START: features

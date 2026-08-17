@@ -12,6 +12,8 @@ Inspiration: Meta's Ranking Engineer Agent (REA) and GEARS (closed, internal, DN
 
 ## 0.1 Current repository state (keep this updated as you build)
 
+Status August 17, 2026: the paper was ACCEPTED at GenAIECommerce 2026 (RecSys 2026 workshop, Minneapolis, September 28). Camera-ready is due August 28 on EasyChair; the camera-ready source is `paper/latex/main.tex` (build with tectonic or pdflatex; 8 pages), the PDF is `paper/EvoRank_GenAIECommerce2026.pdf`, the arXiv bundle is `paper/arxiv/`, and every change against the submitted version plus the code-review outcomes are in `paper/camera_ready_changes.md`. `paper/latex/main_anon.tex` is the submitted (double-blind) text and is not edited.
+
 Phases 0 through 4 of the Section 14 build order are COMPLETE as of July 3, 2026. The full directory tree exists and the pipeline runs end to end on real data. Start any new session by reading `runs/summary/MORNING_SUMMARY.md` (headline table, ablation numbers, discovered-objective analysis) and re-running `uv run python analyze/aggregate.py`.
 
 What exists and is verified:

@@ -6,6 +6,12 @@ combined_score, and stage-attributed artifacts.feedback. The evaluator owns
 everything unsafe: data, semantic column names, leakage-guarded train-fold
 statistics, whitelisted model zoo, ensembling, budgets, and rejection.
 Design: paper/pipeline_design.md.
+
+Note: this evaluator always scores on the fast subset (data/prepared_fast); the
+EVORANK_FAST / EVORANK_FEEDBACK switches apply to eval/evaluator.py (campaign 1)
+only. Full-fold evaluation of discovered pipelines is done offline by
+analyze/pipeline_transfer.py and analyze/eval_full.py. The in-loop noise gate
+uses N_BOOT paired-query bootstrap resamples; the audit scripts use 10,000.
 """
 from __future__ import annotations
 
@@ -83,7 +89,11 @@ def _semantic_frames():
     if "frames" in _DATA_CACHE:
         return _DATA_CACHE["frames"]
     train_df, val_df, _test, feats, _src = get_dataset(fast=True)
-    fmap = pd.read_csv(ROOT / "data" / "prepared" / "feature_map.csv")
+    fmap_path = ROOT / "data" / "prepared" / "feature_map.csv"
+    if not fmap_path.exists():
+        raise StageError("data", f"missing {fmap_path.relative_to(ROOT)}; run "
+                         "data/prepare_expedia.py first (semantic column names are required)")
+    fmap = pd.read_csv(fmap_path)
     rename = dict(zip(fmap["f_index"], fmap["original"]))
     out = {}
     for name, frame in (("train", train_df), ("val", val_df)):
@@ -171,7 +181,13 @@ class TrainStats:
             self._maps[key] = (smoothed, fold_maps, folds, prior)
         smoothed, fold_maps, folds, prior = self._maps[key]
 
-        if self._mode == "train" and df.index.equals(self._train.index):
+        if self._mode == "train":
+            if not df.index.equals(self._train.index):
+                # Falling back to the in-sample map here would reintroduce the
+                # self-leak the out-of-fold path exists to prevent.
+                raise StageError("features",
+                                 "rate() must be called on the unmodified train frame "
+                                 "(do not subset or reorder rows before encoding)")
             out = pd.Series(np.nan, index=df.index)
             for k in range(self.N_FOLDS):
                 mask = (folds == k).to_numpy() if hasattr(folds, "to_numpy") else folds == k
@@ -426,6 +442,9 @@ def evaluate(program_path: str) -> dict:
         for name, X in (("train", Xtr_df), ("val", Xva_df)):
             if not isinstance(X, pd.DataFrame) or len(X) != len(data[name]["frame"]):
                 raise StageError("features", f"{name} output misaligned or not a DataFrame")
+            if not X.index.equals(data[name]["view"].index):
+                raise StageError("features",
+                                 f"{name} output rows reordered: keep the input index")
         if list(Xtr_df.columns) != list(Xva_df.columns):
             raise StageError("features", "train/val column mismatch")
         if Xtr_df.shape[1] > MAX_FEATURES:

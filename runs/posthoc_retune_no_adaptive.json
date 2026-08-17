@@ -1,0 +1,23 @@
+{
+  "name": "posthoc_retune_no_adaptive",
+  "metrics": {
+    "ndcg": 0.4353280961154809,
+    "book_ndcg": 0.45857352264140283,
+    "revenue": 0.40551572529750135
+  },
+  "extra": {
+    "source": "prepared_fast (prepared_fast)",
+    "program": "runs/summary/mechanism_ablation/no_adaptive.py",
+    "trials": 40,
+    "best_params": {
+      "eta": 0.10356401463909468,
+      "max_depth": 3,
+      "min_child_weight": 0.028174190657453954,
+      "subsample": 0.942749419190592,
+      "colsample_bytree": 0.6625003054175611,
+      "gamma": 1.117744985321583e-06,
+      "lambda": 0.14489461040422247,
+      "num_boost_round": 198
+    }
+  }
+}

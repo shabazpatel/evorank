@@ -1,0 +1,23 @@
+{
+  "name": "posthoc_retune_best_program",
+  "metrics": {
+    "ndcg": 0.4351851207692013,
+    "book_ndcg": 0.4601534369207386,
+    "revenue": 0.4088135398035294
+  },
+  "extra": {
+    "source": "prepared_fast (prepared_fast)",
+    "program": "runs/mem_on_s1/checkpoints/checkpoint_40/best_program.py",
+    "trials": 40,
+    "best_params": {
+      "eta": 0.1085820361947575,
+      "max_depth": 3,
+      "min_child_weight": 0.13110058873616395,
+      "subsample": 0.72420409842076,
+      "colsample_bytree": 0.6110890772991874,
+      "gamma": 2.721206990407621e-06,
+      "lambda": 0.7262934708242135,
+      "num_boost_round": 151
+    }
+  }
+}

@@ -88,8 +88,9 @@ def main() -> None:
         try:
             bst = xgb.train(params, dtr, num_boost_round=n, obj=make_obj())
             return metrics_bundle(val_df, bst.predict(dva))["ndcg"]
-        except Exception:
-            return 0.0
+        except Exception as ex:  # a crashing trial is reported, not silently scored 0.0
+            print(f"  trial {trial.number} failed: {type(ex).__name__}: {ex}", flush=True)
+            return float("nan")
 
     study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=0))
     study.optimize(objective, n_trials=args.trials, show_progress_bar=False)

@@ -30,7 +30,7 @@ evolutionary loop that discovers complete Learning-to-Rank pipelines
 search. On the Expedia ICDM 2013 dataset, with
 relevance, conversion, and revenue as competing objectives, three independent runs each converge within 50 iterations (about ten dollars) on interpretable pipelines
 that beat an Optuna-tuned LambdaMART on 60k held-out queries, an advantage that persists at full data scale and places in the top 6
-percent of the original competition by one-shot late submission. A first campaign, evolving only training objectives, supplies the central
+percent of the original competition. A first campaign, evolving only training objectives, supplies the central
 design rule: it appeared to work on its selection fold (the small dataset it uses to
 pick winners) while a transfer audit, re-scoring winners on held-out data,
 showed the gains were almost entirely fitness noise (the randomness of its
@@ -284,17 +284,17 @@ estimated from so few rows.}
 \label{fig:feedback}
 \end{figure}
 
-Before any LLM spend, the headroom gate: a hand-built candidate from the
-ICDM 2013 literature must beat the noise floor by a wide margin (we
-required 2.5 times), and within-query rank features plus count encodings
-did ($+0.013$ NDCG@10). Building that candidate surfaced three successively subtler leakage bugs,
-each measured. Encoding a hotel by its booking rate computed on the training
-fold costs $-0.10$ NDCG: the model partly memorizes its own labels. The
-textbook fix, excluding each row's own label from its encoding, is subtly
-worse at $-0.13$: the exclusion shifts the encoded value slightly downward
-exactly on the booked rows, and the trees learn to read that shift as the
-label itself. Computing encodings out-of-fold, with folds split by query, is
-clean. Each was caught by the audit before any search depended on it.
+Before any LLM spend, we applied the headroom gate: a hand-built candidate
+from the ICDM 2013 literature had to beat the noise floor by 2.5 times, and
+within-query rank features plus count encodings did ($+0.013$ NDCG@10).
+Building that candidate surfaced three successively subtler leakage bugs.
+Encoding a hotel by its booking rate on the training fold costs $-0.10$
+NDCG: the model memorizes its own labels. The textbook fix, leaving each
+row's own label out of its encoding, is worse at $-0.13$: the exclusion
+shifts the encoded value in a direction that depends on the label, and the
+trees read that shift as the label itself. Only out-of-fold encodings, with
+folds split by query, are clean. The audit caught each bug before any
+search depended on it.
 
 \begin{table}
   \caption{Campaign 2 transfer audit: trained on the fitness fold, tested on

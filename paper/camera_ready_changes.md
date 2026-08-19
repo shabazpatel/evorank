@@ -26,7 +26,7 @@ is page-neutral: every addition is offset by a cut elsewhere. Source:
 
 ## Other camera-ready edits
 
-- De-anonymized: Shabaz Patel (Independent Researcher, ORCID 0000-0002-9617-7710, corresponding) and Rayhan Patel (University of Maryland, ORCID 0009-0004-4882-2123), equal contribution; repository URL restored in the title footnote and Conclusion.
+- De-anonymized: Rayhan Patel (University of Maryland, ORCID 0009-0004-4882-2123) and Shabaz Patel (Independent Researcher, ORCID 0000-0002-9617-7710, corresponding), equal contribution; repository URL restored in the title footnote and Conclusion.
 - Bibliography: Meta REA entry now carries the blog URL and access date. Other entries unchanged (arXiv ids kept where no venue publication was confirmed).
 - Offsetting cuts for page neutrality: Fig. 2 log excerpt drops the feature-stage line (caption now says "excerpted"), duplicate baseline sentence removed from §3.4, the Discussion's research-directions paragraph compressed, the probe-byproduct sentence and the "neither magic nor broken" sentence removed, provenance caveat tightened, minor phrasing trims in Related Work and Campaign 1.
 - Numbers checked against `runs/summary/`: Table 1 = `pipeline_transfer.csv`; Table 2 = `fullscale_ndcg38.csv`; bootstrap CIs and p-values = `bootstrap_headline.csv`; Kaggle 0.5196 / 0.5140 and ranks 20 / 30 of 340 = `PIPELINE_CAMPAIGN.md` (official late-submission table). All match.

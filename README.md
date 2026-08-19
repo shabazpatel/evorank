@@ -198,7 +198,7 @@ paper/                design docs, figures, draft
 ## Paper
 
 *EvoRank: LLM-Guided Evolution of Multi-Objective Learning-to-Rank Pipelines.*
-Shabaz Patel and Rayhan Patel. Accepted at GenAIECommerce 2026, the Third
+Rayhan Patel and Shabaz Patel. Accepted at GenAIECommerce 2026, the Third
 Workshop on Agentic and Generative AI for E-commerce, co-located with RecSys
 2026 (Minneapolis, MN, USA, September 28, 2026). Camera-ready PDF:
 [`paper/EvoRank_GenAIECommerce2026.pdf`](paper/EvoRank_GenAIECommerce2026.pdf);
@@ -207,7 +207,7 @@ LaTeX source in `paper/latex/`.
 ```bibtex
 @inproceedings{patel2026evorank,
   title     = {EvoRank: LLM-Guided Evolution of Multi-Objective Learning-to-Rank Pipelines},
-  author    = {Patel, Shabaz and Patel, Rayhan},
+  author    = {Patel, Rayhan and Patel, Shabaz},
   booktitle = {Proceedings of the Third Workshop on Agentic and Generative AI for
                E-commerce (GenAIECommerce 2026), co-located with RecSys 2026},
   series    = {CEUR Workshop Proceedings},

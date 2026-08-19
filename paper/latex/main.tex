@@ -145,7 +145,7 @@ solutions autonomously, for about ten dollars.
   \includegraphics[width=\linewidth]{flowchart.pdf}
   \caption{The EvoRank system. Lane A: frozen data preparation producing a
   small scoring fold and a large held-out fold. Lane B: the loop, one LLM call per iteration, from archive through
-  prompt, edit, guarded evaluation, and feedback (Figure~2) back to the
+  prompt, edit, guarded evaluation, and feedback (Figure~\ref{fig:feedback}) back to the
   archive. Dashed: optional expert knowledge, ablated in campaign 1. Lane C: the audit stack: pre-spend headroom gate, baselines on
   equal terms, and the held-out audit that decides what counts.}
   \label{fig:system}
@@ -468,15 +468,15 @@ Nature 625:468--475, 2024.
 \bibitem{alphaevolve} A. Novikov, N. V\~{u}, M. Eisenberger, et al.
 AlphaEvolve: A coding agent for scientific and algorithmic discovery.
 arXiv:2506.13131, 2025.
-\bibitem{rea} Meta Engineering. Ranking Engineer Agent (REA): The Autonomous
-AI Agent Accelerating Meta's Ads Ranking Innovation. Engineering at Meta
-blog, 17 March 2026.
-\url{https://engineering.fb.com/2026/03/17/developer-tools/ranking-engineer-agent-rea-autonomous-ai-system-accelerating-meta-ads-ranking-innovation/}
-(accessed 17 August 2026).
 \bibitem{adaevolve} M. Cemri, S. Agrawal, A. Gupta, et al. AdaEvolve:
 Adaptive LLM Driven Zeroth-Order Optimization. arXiv:2602.20133, 2026.
 \bibitem{evox} S. Liu, S. Agarwal, M. Maheswaran, et al. EvoX:
 Meta-Evolution for Automated Discovery. arXiv:2602.23413, 2026.
+\bibitem{rea} A. Kumar, E. Gao, M. Levi, et al. Ranking Engineer Agent (REA):
+The Autonomous AI Agent Accelerating Meta's Ads Ranking Innovation.
+Engineering at Meta blog, 17 March 2026.
+\url{https://engineering.fb.com/2026/03/17/developer-tools/ranking-engineer-agent-rea-autonomous-ai-system-accelerating-meta-ads-ranking-innovation/}
+(accessed 17 August 2026).
 \bibitem{glo} S. Gonzalez and R. Miikkulainen. Improved training speed,
 accuracy, and data utilization through loss function optimization. IEEE
 Congress on Evolutionary Computation, 2020.
@@ -502,14 +502,14 @@ Search. EMNLP, 2023.
 \bibitem{opro} C. Yang, X. Wang, Y. Lu, et al. Large Language Models as
 Optimizers. ICLR, 2024.
 \bibitem{gepa} L. Agrawal, S. Tan, D. Soylu, et al. GEPA: Reflective prompt
-evolution can outperform reinforcement learning. arXiv:2507.19457, 2025.
+evolution can outperform reinforcement learning. ICLR, 2026.
 \bibitem{caafe} N. Hollmann, S. M\"{u}ller, and F. Hutter. Large Language
 Models for Automated Data Science: Introducing CAAFE for Context-Aware
 Automated Feature Engineering. NeurIPS, 2023.
 \bibitem{aide} Z. Jiang, D. Schmidt, D. Srikanth, et al. AIDE: AI-Driven
 Exploration in the Space of Code. arXiv:2502.13138, 2025.
 \bibitem{mlagent} Z. Liu, J. Chai, X. Zhu, et al. ML-Agent: Reinforcing LLM
-Agents for Autonomous Machine Learning Engineering. arXiv:2505.23723, 2025.
+Agents for Autonomous Machine Learning Engineering. ICML, 2026.
 \bibitem{lambdamart} C. J. C. Burges. From RankNet to LambdaRank to
 LambdaMART: An overview. Microsoft Research Technical Report MSR-TR-2010-82,
 2010.
@@ -520,12 +520,12 @@ Ranking Models for Personalized Expedia Hotel Searches. arXiv:1311.7679,
 2013.
 \bibitem{survey2024} M. A. Kabir, M. A. Hasan, A. Mandal, D. Tunkelang, and
 Z. Wu. A Survey on E-Commerce Learning to Rank. arXiv:2412.03581, 2024.
-\bibitem{optuna} T. Akiba, S. Sano, T. Yanase, T. Ohta, and M. Koyama.
-Optuna: A Next-generation Hyperparameter Optimization Framework. KDD, 2019.
 \bibitem{xgboost} T. Chen and C. Guestrin. XGBoost: A Scalable Tree Boosting
 System. KDD, 2016.
 \bibitem{lightgbm} G. Ke, Q. Meng, T. Finley, et al. LightGBM: A Highly
 Efficient Gradient Boosting Decision Tree. NeurIPS, 2017.
+\bibitem{optuna} T. Akiba, S. Sano, T. Yanase, T. Ohta, and M. Koyama.
+Optuna: A Next-generation Hyperparameter Optimization Framework. KDD, 2019.
 \end{thebibliography}
 
 \end{document}

@@ -54,6 +54,7 @@ paper/latex/main*.pdf
 paper/latex/ceurart-master/
 paper/latex/compile.log
 paper/arxiv/*.pdf
+paper/arxiv/*.tar.gz
 paper/submitted_*.pdf
 # Local tooling and OS junk
 .claude/

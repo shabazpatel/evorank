@@ -19,7 +19,7 @@ pdfLaTeX test build (arXiv uses pdfLaTeX, TeX Live): upload the archive to an
 Overleaf project with the compiler set to pdfLaTeX, or install BasicTeX
 (`brew install --cask basictex`) and run `pdflatex main.tex` twice.
 
-After the CEUR-WS volume is published, add the volume URL to the title footnote
-in `latex/main.tex`, rebuild, regenerate this bundle, and update the arXiv
-record's journal reference (Comments/Journal-ref fields), not a new version of
-the PDF unless the text changes.
+The proceedings are published on the workshop website
+(https://genai-ecommerce.github.io/GenAIECommerce2026), not CEUR-WS. Once the
+paper's page is online there, update the arXiv record's Comments/Journal-ref
+fields to point at it; upload a new source version only if the text changes.

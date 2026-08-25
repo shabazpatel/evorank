@@ -198,9 +198,11 @@ paper/                design docs, figures, draft
 ## Paper
 
 *EvoRank: LLM-Guided Evolution of Multi-Objective Learning-to-Rank Pipelines.*
-Rayhan Patel and Shabaz Patel. Accepted at GenAIECommerce 2026, the Third
-Workshop on Agentic and Generative AI for E-commerce, co-located with RecSys
-2026 (Minneapolis, MN, USA, September 28, 2026). Camera-ready PDF:
+Rayhan Patel and Shabaz Patel. Accepted at GenAIECommerce'26, the Third
+Workshop on Agentic and Generative AI for E-Commerce, co-located with RecSys,
+September 28, 2026, Minneapolis, MN, USA. Proceedings are published on the
+workshop website: https://genai-ecommerce.github.io/GenAIECommerce2026.
+Camera-ready PDF:
 [`paper/EvoRank_GenAIECommerce2026.pdf`](paper/EvoRank_GenAIECommerce2026.pdf);
 LaTeX source in `paper/latex/`.
 
@@ -209,11 +211,10 @@ LaTeX source in `paper/latex/`.
   title     = {EvoRank: LLM-Guided Evolution of Multi-Objective Learning-to-Rank Pipelines},
   author    = {Patel, Rayhan and Patel, Shabaz},
   booktitle = {Proceedings of the Third Workshop on Agentic and Generative AI for
-               E-commerce (GenAIECommerce 2026), co-located with RecSys 2026},
-  series    = {CEUR Workshop Proceedings},
-  publisher = {CEUR-WS.org},
+               E-Commerce (GenAIECommerce'26), co-located with RecSys 2026},
   year      = {2026},
-  note      = {To appear. Code: \url{https://github.com/shabazpatel/evorank}}
+  note      = {Workshop proceedings: \url{https://genai-ecommerce.github.io/GenAIECommerce2026}.
+               Code: \url{https://github.com/shabazpatel/evorank}}
 }
 ```
 

@@ -1,8 +1,17 @@
 # Camera-ready changes: EvoRank (GenAIECommerce 2026 @ RecSys 2026, submission 26)
 
-Camera-ready due 28 August 2026 on EasyChair. Page allowance unchanged from
-submission (CEUR short-paper band, held at 8 physical pages), so the revision
-is page-neutral: every addition is offset by a cut elsewhere. Source:
+Camera-ready due 1 September 2026 on EasyChair (extended from 28 August).
+Page allowance unchanged from submission (CEURART short-paper band, held at 8
+physical pages), so the revision is page-neutral: every addition is offset by
+a cut elsewhere. Chairs' final instructions (24 August): keep the single-column
+CEURART template; proceedings are published on the workshop website
+(https://genai-ecommerce.github.io/GenAIECommerce2026), not CEUR-WS this year.
+Applied: \conference{} set verbatim to "GenAIECommerce'26: The Third Workshop
+on Agentic and Generative AI for E-Commerce, co-located with RecSys, September
+28, 2026, Minneapolis, MN, USA"; the page-1 footnote verified to render the
+required "(c) 2026 Copyright for this paper by its authors. Use permitted under
+Creative Commons License Attribution 4.0 International (CC BY 4.0)."; author
+names and affiliations verified final. Source:
 `paper/latex/main.tex`; the submitted anonymized text is preserved in
 `paper/latex/main_anon.tex` and `paper/submitted_2026-07-12.pdf` (local).
 

@@ -172,17 +172,21 @@ discovered pipeline \textbf{0.5196} private NDCG@38 $\to$ would rank
 \end{block}
 
 \SectionHead{What the search found}
+All three runs converged on the same simple recipe, as readable code:\\[3mm]
 \begin{block}
-{\SmallSize\ttfamily
-for c in [price, stars, review, loc1, loc2]:\\
-\hspace*{6mm}out[c+"\_qrank"] = groupby(qid)[c].rank(pct=True)\\
-out["prop\_id\_count"] = stats.count(df, "prop\_id")\\
-PIPELINE = \{xgb:rank\,ndcg + lgbm:lambdarank + sklearn:ert,\\
-\hspace*{6mm}ensemble: zscore\_weighted [0.5, 0.35, 0.15]\}}\\[2mm]
-{\SmallSize The same readable core in all three runs: within-query
-percentile ranks, count encodings, a lean feature set, and a diverse
-ensemble under per-query z-scores: the ICDM 2013 winners' essential
-structure, rediscovered and extended autonomously.}
+\textbf{Features} (about 25, deliberately few):
+\begin{itemize}\setlength\itemsep{1mm}
+\item rank price, stars, review and location scores \emph{within each
+search}, so hotels compete against what they were shown with
+\item count how often each hotel and destination appears (popularity)
+\end{itemize}
+\vspace{2mm}
+\textbf{Model}: three different learners, blended per query:\\[1mm]
+{\SmallSize\ttfamily 0.50 x XGBoost (rank:ndcg) \;+\; 0.35 x LightGBM
+(lambdarank) \;+\; 0.15 x ExtraTrees}\\[2mm]
+{\SmallSize This is the structure the 2013 challenge winners engineered by
+hand. The loop found it on its own in 50 iterations, and every piece is
+inspectable code, not weights.}
 \end{block}\vspace{6mm}
 
 \SectionHead{Metrics after selection}

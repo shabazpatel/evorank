@@ -60,3 +60,5 @@ paper/submitted_*.pdf
 .claude/
 .DS_Store
 **/.DS_Store
+paper/poster/poster.pdf
+paper/poster/poster_bleed.pdf

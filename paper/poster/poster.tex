@@ -63,7 +63,7 @@ co-located with RecSys 2026, Minneapolis, MN, USA}
 
 %% ---------------- three columns ----------------
 \begin{minipage}[t]{0.315\textwidth}
-\SectionHead{The failure nobody reports}
+\SectionHead{1.\ Introduction: Selection Under Evaluation Noise}
 Evolutionary loops that pair an LLM with a scored evaluator now design
 ranking systems end to end: propose a change, measure it, keep the best
 score. But ranking measurements are noisy, and a selector that always takes
@@ -80,7 +80,7 @@ We package the pre-check as the \textbf{headroom gate}, and we let a
 loop's own scores.
 \end{block}
 
-\SectionHead{One loop, gated and audited}
+\SectionHead{2.\ System and Audit Methodology}
 \begin{center}\includegraphics[width=0.88\linewidth]{flowchart_poster.pdf}\end{center}\vspace{1mm}
 
 \begin{block}
@@ -97,7 +97,7 @@ NDCG@10), and revenue (pooled dollar-weighted capture).
 \end{minipage}\hfill
 %% ---------------- column 2 ----------------
 \begin{minipage}[t]{0.315\textwidth}
-\SectionHead{Campaign 1: the loop selects noise}
+\SectionHead{3.\ Campaign 1: Objective Space Selects Noise}
 We first let the loop evolve only the training objective, the LambdaMART
 gradient. On its selection fold it improved steadily. The transfer audit
 told a different story.\\[3mm]
@@ -115,7 +115,7 @@ Seeded knowledge made the search faster, not truer; richer feedback
 changed nothing that transferred. What helped was boring: a larger
 evaluation fold halved the noise and tripled the surviving gain.\\[5mm]
 
-\SectionHead{Campaign 2: aim where there is headroom}
+\SectionHead{4.\ Campaign 2: Pipeline Space Discovers}
 Same loop, wider space: features, models, losses, and ensembling behind
 leakage-safe helpers. This space passed the gate ($+0.013$, over
 $2.5\times$ the noise floor), so we ran it. Three runs, 50 iterations:\\[3mm]
@@ -139,7 +139,7 @@ Every run beats the tuned baseline on held-out data; the best wins by
 $+0.0057$ NDCG@10 (95\% CI $[0.0041, 0.0073]$, $p<0.0001$), with revenue
 matching.\\[4mm]
 
-\SectionHead{Continual improvement, then proof}
+\SectionHead{5.\ Convergence Analysis}
 \includegraphics[width=\linewidth]{convergence_poster.pdf}
 {\SmallSize Best-so-far fitness NDCG@10 per iteration (top) and each
 iteration's increment (bottom). All three runs pass the tuned baseline
@@ -148,7 +148,7 @@ table above shows what survived the audit.}
 \end{minipage}\hfill
 %% ---------------- column 3 ----------------
 \begin{minipage}[t]{0.315\textwidth}
-\SectionHead{It holds at full scale}
+\SectionHead{6.\ Full-Scale Evaluation}
 \begin{center}\SmallSize
 \begin{tabular}{lcc}
 \toprule
@@ -171,7 +171,7 @@ discovered pipeline \textbf{0.5196} private NDCG@38 $\to$ would rank
 (30th). Ten leaderboard places from the discovered structure alone.
 \end{block}
 
-\SectionHead{What the search found}
+\SectionHead{7.\ The Discovered Pipeline}
 All three runs converged on the same simple recipe, as readable code:\\[3mm]
 \begin{block}
 \textbf{Features} (about 25, deliberately few):
@@ -189,7 +189,7 @@ hand. The loop found it on its own in 50 iterations, and every piece is
 inspectable code, not weights.}
 \end{block}\vspace{6mm}
 
-\SectionHead{Metrics after selection}
+\SectionHead{8.\ Transfer Audit Results}
 \includegraphics[width=\linewidth]{transfer_contrast.pdf}
 {\SmallSize The whole study in one picture: per-run NDCG@10 gain over the
 starting program, on the selection fold (open) versus 60k held-out queries
@@ -206,7 +206,7 @@ transfer, not online effects.}
 \vfill
 \begin{tcolorbox}[enhanced,colback=goldfill,colframe=goldedge,boxrule=1.5pt,
   arc=4mm,left=10mm,right=10mm,top=6mm,bottom=6mm]
-{\fontsize{42}{48}\selectfont\bfseries\color{goldedge}Use this on your ranking stack}\\[4mm]
+{\fontsize{42}{48}\selectfont\bfseries\color{goldedge}9.\ A Reusable Procedure for LLM-Driven Ranking Discovery}\\[4mm]
 \newcommand{\Step}[2]{\begin{minipage}[t]{0.188\textwidth}
 {\BodySize\bfseries\color{goldedge}#1}\\[2mm]{\SmallSize #2}\end{minipage}}
 \Step{1. Measure noise}{Paired query bootstrap on the evaluation fold you

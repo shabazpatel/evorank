@@ -9,8 +9,9 @@
             margin=\dimexpr18mm+\BLEED\relax,
             top=\dimexpr14mm+\BLEED\relax,
             bottom=\dimexpr16mm+\BLEED\relax]{geometry}
+\usepackage{iftex}
+\ifPDFTeX\usepackage[T1]{fontenc}\fi
 \usepackage{libertinus}
-\usepackage[T1]{fontenc}
 \usepackage{graphicx,booktabs,xcolor,tcolorbox,setspace}
 \usepackage[nolinks]{qrcode}
 \tcbuselibrary{skins}

@@ -34,7 +34,7 @@
 \newcommand{\SmallSize}{\fontsize{25}{33}\selectfont}
 \newcommand{\FootSize}{\fontsize{26}{34}\selectfont}
 
-\newcommand{\SectionHead}[1]{{\HeadSize #1}\\[4mm]}
+\newcommand{\SectionHead}[1]{{\HeadSize\begin{minipage}[t]{\linewidth}\raggedright #1\end{minipage}}\\[4mm]}
 \newenvironment{block}[1][accentfill]{%
   \begin{tcolorbox}[enhanced,colback=#1,colframe=accent,boxrule=1.2pt,
     arc=4mm,left=8mm,right=8mm,top=6mm,bottom=6mm]}{\end{tcolorbox}\vspace{6mm}}
@@ -46,13 +46,13 @@
 \begin{minipage}[c]{0.855\textwidth}\color{white}
 {\TitleSize\bfseries EvoRank: LLM-Guided Evolution of\\[2mm]
 Multi-Objective Learning-to-Rank Pipelines}\\[4mm]
-{\fontsize{40}{48}\selectfont\itshape An evolutionary loop that engineers
-ranking pipelines, and the audit that keeps it honest.}\\[6mm]
+{\fontsize{40}{48}\selectfont\itshape An evolutionary agent that builds new
+rerankers, and knows when an LLM edit will pay off.}\\[6mm]
 {\AuthorSize Rayhan Patel$^{1,\dagger}$ \quad Shabaz Patel$^{2,\dagger}$}\\[4mm]
 {\SmallSize $^{1}$University of Maryland, College Park \quad $^{2}$Independent Researcher
 \quad $^{\dagger}$equal contribution\\[2mm]
 GenAIECommerce'26: The Third Workshop on Agentic and Generative AI for E-Commerce,
-co-located with RecSys 2026, Minneapolis, MN, USA}
+RecSys 2026, Minneapolis, MN, USA}
 \end{minipage}\hfill
 \begin{minipage}[c]{0.115\textwidth}\centering
 \colorbox{white}{\qrcode[height=86mm]{https://github.com/shabazpatel/evorank}}\\[3mm]
@@ -63,21 +63,24 @@ co-located with RecSys 2026, Minneapolis, MN, USA}
 
 %% ---------------- three columns ----------------
 \begin{minipage}[t]{0.315\textwidth}
-\SectionHead{Introduction: Selection Under Evaluation Noise}
-Evolutionary loops that pair an LLM with a scored evaluator now design
-ranking systems end to end: propose a change, measure it, keep the best
-score. But ranking measurements are noisy, and a selector that always takes
-the top score will happily select noise, reporting steady progress while
-discovering nothing that holds up on unseen data. We built such a loop,
-caught it doing exactly this, measured why, and turned the fix into a
-procedure.\\[4mm]
+\SectionHead{An Evolutionary Agent for Learning-to-Rank}
+EvoRank is an open evolutionary agent that engineers rerankers end to end.
+Each iteration, an LLM edits a candidate program: feature construction,
+model and loss selection, and ensembling. A guarded evaluator scores the
+edit on three competing business objectives, and a Pareto archive keeps the
+best trade-offs. In 50 iterations and about \$10, the agent produces
+interpretable pipelines that beat a tuned LambdaMART on held-out data.\\[4mm]
 \begin{block}[goldfill]
-\textbf{\color{goldedge}The claim.} Whether the loop will pay off is
-measurable before any LLM spend. The deciding quantity is the ratio of the
-effect sizes the search space can offer to the noise of the fitness signal.
-We package the pre-check as the \textbf{headroom gate}, and we let a
-\textbf{transfer audit} on held-out queries decide what counts, never the
-loop's own scores.
+\textbf{\color{goldedge}Contributions.}
+\begin{itemize}\setlength\itemsep{2mm}
+\item \textbf{EvoRank}: an open evolutionary agent that discovers
+multi-objective rerankers as readable code, with seeds, logs, and audits.
+\item \textbf{Headroom gate}: decides \emph{before any LLM spend} whether
+proposing edits in a search space can pay off, by comparing achievable
+effect sizes to evaluation noise.
+\item \textbf{Transfer audit}: only gains that survive 60k held-out
+queries count as discoveries.
+\end{itemize}
 \end{block}
 
 \SectionHead{System and Audit Methodology}
@@ -97,10 +100,10 @@ NDCG@10), and revenue (pooled dollar-weighted capture).
 \end{minipage}\hfill
 %% ---------------- column 2 ----------------
 \begin{minipage}[t]{0.315\textwidth}
-\SectionHead{Campaign 1: Objective Space Selects Noise}
-We first let the loop evolve only the training objective, the LambdaMART
-gradient. On its selection fold it improved steadily. The transfer audit
-told a different story.\\[3mm]
+\SectionHead{Campaign 1: Why the Gate Is Needed}
+We first pointed the agent at a space with no headroom: the training
+objective alone, the LambdaMART gradient. On its selection fold it improved
+steadily. The transfer audit told a different story.\\[3mm]
 \begin{block}[winefill]
 On 60k held-out queries: the best evolved objective beats its own starting
 program by $+0.0002$ NDCG@10 ($p=0.76$); blind random search at the same
@@ -112,13 +115,14 @@ When the effect is smaller than the ruler, picking the best score is
 picking luck.
 \end{block}
 Seeded knowledge made the search faster, not truer; richer feedback
-changed nothing that transferred. What helped was boring: a larger
-evaluation fold halved the noise and tripled the surviving gain.\\[5mm]
+changed nothing that transferred. The gate predicts this outcome in
+advance, for the cost of one hand-built candidate, and saves the entire
+spend.\\[5mm]
 
-\SectionHead{Campaign 2: Pipeline Space Discovers}
-Same loop, wider space: features, models, losses, and ensembling behind
-leakage-safe helpers. This space passed the gate ($+0.013$, over
-$2.5\times$ the noise floor), so we ran it. Three runs, 50 iterations:\\[3mm]
+\SectionHead{Campaign 2: The Agent Discovers Rerankers}
+Same agent, aimed where the gate approves: the full pipeline space, behind
+leakage-safe helpers ($+0.013$ headroom, over $2.5\times$ the noise
+floor). Three runs, 50 iterations:\\[3mm]
 \begin{center}\SmallSize
 \begin{tabular}{lcccc}
 \toprule

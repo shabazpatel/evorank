@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: "If you use EvoRank or its methodology, please cite the paper below."
+title: "EvoRank"
+abstract: "LLM-guided evolution of multi-objective learning-to-rank pipelines, with a headroom gate before any LLM spend and a held-out transfer audit of every discovery."
+type: software
+authors:
+  - family-names: Patel
+    given-names: Rayhan
+    affiliation: University of Maryland, College Park
+    orcid: "https://orcid.org/0009-0004-4882-2123"
+  - family-names: Patel
+    given-names: Shabaz
+    affiliation: Independent Researcher
+repository-code: "https://github.com/shabazpatel/evorank"
+license: Apache-2.0
+keywords:
+  - learning to rank
+  - LLM-guided program search
+  - multi-objective ranking
+  - recommender systems
+preferred-citation:
+  type: conference-paper
+  title: "EvoRank: LLM-Guided Evolution of Multi-Objective Learning-to-Rank Pipelines"
+  authors:
+    - family-names: Patel
+      given-names: Rayhan
+      affiliation: University of Maryland, College Park
+      orcid: "https://orcid.org/0009-0004-4882-2123"
+    - family-names: Patel
+      given-names: Shabaz
+      affiliation: Independent Researcher
+  collection-title: "Proceedings of the Third Workshop on Agentic and Generative AI for E-Commerce (GenAIECommerce'26), co-located with RecSys 2026"
+  conference:
+    name: "GenAIECommerce'26, co-located with ACM RecSys 2026"
+    city: Minneapolis
+    region: MN
+    country: US
+    date-start: "2026-09-28"
+    date-end: "2026-09-28"
+  year: 2026
+  url: "https://arxiv.org/abs/2609.22196"
+  identifiers:
+    - type: other
+      value: "arXiv:2609.22196"
+      description: arXiv preprint
+    - type: url
+      value: "https://genai-ecommerce.github.io/GenAIECommerce2026"
+      description: Workshop proceedings

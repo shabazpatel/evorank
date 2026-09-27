@@ -202,9 +202,14 @@ Rayhan Patel and Shabaz Patel. Accepted at GenAIECommerce'26, the Third
 Workshop on Agentic and Generative AI for E-Commerce, co-located with RecSys,
 September 28, 2026, Minneapolis, MN, USA. Proceedings are published on the
 workshop website: https://genai-ecommerce.github.io/GenAIECommerce2026.
+arXiv: [2609.22196](https://arxiv.org/abs/2609.22196).
 Camera-ready PDF:
 [`paper/EvoRank_GenAIECommerce2026.pdf`](paper/EvoRank_GenAIECommerce2026.pdf);
 LaTeX source in `paper/latex/`.
+
+Presented as a poster by Rayhan Patel at the workshop's poster session on
+September 28, 2026. Poster:
+[`paper/poster/EvoRank_RecSys2026_Poster_A0.pdf`](paper/poster/EvoRank_RecSys2026_Poster_A0.pdf).
 
 ```bibtex
 @inproceedings{patel2026evorank,
@@ -213,6 +218,9 @@ LaTeX source in `paper/latex/`.
   booktitle = {Proceedings of the Third Workshop on Agentic and Generative AI for
                E-Commerce (GenAIECommerce'26), co-located with RecSys 2026},
   year      = {2026},
+  eprint    = {2609.22196},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
   note      = {Workshop proceedings: \url{https://genai-ecommerce.github.io/GenAIECommerce2026}.
                Code: \url{https://github.com/shabazpatel/evorank}}
 }
@@ -221,4 +229,5 @@ LaTeX source in `paper/latex/`.
 ## License
 
 Apache-2.0. If this tool or its methodology is useful in your work, please
-cite the paper above.
+cite the paper above (GitHub's "Cite this repository" button uses
+[`CITATION.cff`](CITATION.cff)).

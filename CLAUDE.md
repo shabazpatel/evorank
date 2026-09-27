@@ -1,4 +1,4 @@
-# CLAUDE.md — EvoRank (Option 2: Agentic LTR Experimentation Loop)
+# CLAUDE.md for EvoRank (Option 2: Agentic LTR Experimentation Loop)
 
 Project context for Claude Code. Read this fully before writing any code.
 
@@ -71,14 +71,14 @@ Target abstract sentence: we show that LLM-guided evolutionary search discovers 
 - Extra Python deps for our work: `xgboost`, `pandas`, `numpy`, `pyarrow`, `optuna`, `scikit-learn`. Install into the uv environment: `uv pip install xgboost pandas numpy pyarrow optuna scikit-learn`.
 - Do NOT modify SkyDiscover's own source (`skydiscover/`, `benchmarks/`, `configs/`). Treat the framework as a black box accessed only through its documented API (Section 3). Put all of our work under `projects/evorank/`.
 
-## 3. SkyDiscover API contract (verified — conform exactly)
+## 3. SkyDiscover API contract (verified; conform exactly)
 
 Before writing our evaluator, **read these real templates** and mirror their structure:
 `benchmarks/math/circle_packing/initial_program.py`, `.../evaluator.py`, `.../config.yaml`.
 
 Key facts:
 - Evaluator is a Python file exposing `def evaluate(program_path) -> dict`. The dict must contain `combined_score` (float, maximized) unless Pareto mode supplies objective keys. Optional `artifacts` (dict) is injected into the next LLM prompt as context. This `artifacts` channel is how we feed insights back, so use it deliberately.
-- Seed/initial program marks the mutable region with `# EVOLVE-BLOCK-START` and `# EVOLVE-BLOCK-END`. Everything outside is frozen. If no markers, the whole file is mutable (we do not want that — always use markers).
+- Seed/initial program marks the mutable region with `# EVOLVE-BLOCK-START` and `# EVOLVE-BLOCK-END`. Everything outside is frozen. If no markers, the whole file is mutable (we do not want that; always use markers).
 - Pareto mode: set `search.type: adaevolve` and `search.database.pareto_objectives: [...]` in the config, and return those exact metric keys from `evaluate`. In Pareto mode `combined_score` becomes an optional scalar fallback.
 - Run via CLI: `uv run skydiscover-run <initial_program.py> <evaluator.py> --config <config.yaml> --search adaevolve --iterations N -o <output_dir>`.
 - Or Python API: `from skydiscover import run_discovery; run_discovery(initial_program=..., evaluator=..., search="adaevolve", model=..., iterations=...)`. It returns an object with `.best_score` and `.best_solution`.
@@ -254,15 +254,15 @@ Claim to support: domain-seeded memory makes the autonomous loop converge faster
 
 ## 14. Build order (phased, with definition-of-done)
 
-**Phase 0 — Foundation smoke test.** `uv sync`; set key; run the circle_packing example for ~5 iterations to confirm SkyDiscover works end to end. Done when a run completes and writes a checkpoint.
+**Phase 0: Foundation smoke test.** `uv sync`; set key; run the circle_packing example for ~5 iterations to confirm SkyDiscover works end to end. Done when a run completes and writes a checkpoint.
 
-**Phase 1 — Shared foundation.** Do this interactively in `notebooks/foundation.ipynb` first. It already runs end to end on synthetic data and validates the metrics, the group-aware custom objective, and the `evaluate(program_path)` contract. Then port the verified functions into `metrics.py`, `train_xgbranker.py`, `seed/initial_program.py`, and `eval/evaluator.py`, and write `prepare_expedia.py` + `schema.md`. Done when (a) the metric unit checks pass, (b) the custom LambdaMART objective reproduces built-in `rank:ndcg` within noise on the data (the correctness check), and (c) `evaluate("seed/initial_program.py")` returns the three metrics on the real Expedia fast subset. **Stop here and report numbers before going further.**
+**Phase 1: Shared foundation.** Do this interactively in `notebooks/foundation.ipynb` first. It already runs end to end on synthetic data and validates the metrics, the group-aware custom objective, and the `evaluate(program_path)` contract. Then port the verified functions into `metrics.py`, `train_xgbranker.py`, `seed/initial_program.py`, and `eval/evaluator.py`, and write `prepare_expedia.py` + `schema.md`. Done when (a) the metric unit checks pass, (b) the custom LambdaMART objective reproduces built-in `rank:ndcg` within noise on the data (the correctness check), and (c) `evaluate("seed/initial_program.py")` returns the three metrics on the real Expedia fast subset. **Stop here and report numbers before going further.**
 
-**Phase 2 — Baselines.** `lambdamart_optuna.py`, `lambdaloss.py`, `random_search.py`, all logging to `runs/`. Done when the tuned baseline and LambdaLoss numbers are recorded.
+**Phase 2: Baselines.** `lambdamart_optuna.py`, `lambdaloss.py`, `random_search.py`, all logging to `runs/`. Done when the tuned baseline and LambdaLoss numbers are recorded.
 
-**Phase 3 — Evolutionary runs.** Both configs, a single short run each (10-15 iterations) to validate the loop, Pareto keys, and `artifacts` injection. Done when both runs complete and `aggregate.py` produces a frontier plot.
+**Phase 3: Evolutionary runs.** Both configs, a single short run each (10-15 iterations) to validate the loop, Pareto keys, and `artifacts` injection. Done when both runs complete and `aggregate.py` produces a frontier plot.
 
-**Phase 4 — Ablation.** The full 3-seed matrix at 40 iterations, then `aggregate.py` tables/curves. Done when the memory-on vs memory-off comparison is plotted with seeds.
+**Phase 4: Ablation.** The full 3-seed matrix at 40 iterations, then `aggregate.py` tables/curves. Done when the memory-on vs memory-off comparison is plotted with seeds.
 
 Do not start Phase N+1 until Phase N's definition-of-done is met. After each phase, print a short status summary and the key numbers.
 

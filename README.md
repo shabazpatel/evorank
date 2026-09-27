@@ -9,7 +9,7 @@ held-out data. You define the objectives. It does the experimentation.
 flowchart TB
     G["🚦 <b>gate</b><br/>is this search space worth the spend?"]
     G ==> LOOP
-    subgraph LOOP["🔁 <b>search</b> — one LLM call per iteration"]
+    subgraph LOOP["🔁 <b>search</b>: one LLM call per iteration"]
         direction LR
         P["propose"] --> C["candidate:<br/>features, models,<br/>losses, ensemble"]
         C --> X["guarded<br/>experiment"]

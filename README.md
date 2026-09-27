@@ -207,7 +207,7 @@ Camera-ready PDF:
 [`paper/EvoRank_GenAIECommerce2026.pdf`](paper/EvoRank_GenAIECommerce2026.pdf);
 LaTeX source in `paper/latex/`.
 
-Presented as a poster by Rayhan Patel at the workshop's poster session on
+Poster presentation by Rayhan Patel at the workshop's poster session,
 September 28, 2026. Poster:
 [`paper/poster/EvoRank_RecSys2026_Poster_A0.pdf`](paper/poster/EvoRank_RecSys2026_Poster_A0.pdf).
 
